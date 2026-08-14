@@ -38,6 +38,10 @@ STATUS_LABELS = {
 # der Dropbox-Upload ist bewusst kein Automatismus, siehe README.
 MANUAL_ACTION_STATUSES = ("ready", "failed")
 
+# Standardmäßig ausgeblendet (Checkbox "Stornierte/Gelöschte einblenden"),
+# es sei denn im Status-Filter wird gezielt genau danach gefiltert.
+HIDDEN_BY_DEFAULT_STATUSES = ("canceled", "deleted")
+
 DASHBOARD_SORT_OPTIONS = [
     ("sendezeit", "Sendezeit (neueste zuerst)"),
     ("sender", "Sender"),
@@ -129,25 +133,32 @@ def create_app(config: Config | None = None) -> Flask:
                 "dashboard",
                 status=request.values.get("status") or None,
                 sortierung=request.values.get("sortierung") or None,
+                alle_status=request.values.get("alle_status") or None,
             )
         )
 
     @app.route("/")
     def dashboard():
         selected_status = request.args.get("status") or ""
+        show_hidden = request.args.get("alle_status") == "1"
         sort_key = request.args.get("sortierung") or "sendezeit"
         if sort_key not in dict(DASHBOARD_SORT_OPTIONS):
             sort_key = "sendezeit"
 
-        jobs = scheduler.list_jobs(config)
+        all_jobs = scheduler.list_jobs(config)
+        jobs = all_jobs
         if selected_status:
             jobs = [j for j in jobs if j["status"] == selected_status]
+        elif not show_hidden:
+            jobs = [j for j in jobs if j["status"] not in HIDDEN_BY_DEFAULT_STATUSES]
         jobs.sort(
             key=_dashboard_sort_key(config, sort_key), reverse=(sort_key == "sendezeit")
         )
 
         return render_template(
             "dashboard.html",
+            has_any_jobs=bool(all_jobs),
+            show_hidden=show_hidden,
             jobs=jobs,
             channel_map=config.channel_map,
             status_options=STATUS_LABELS,

@@ -142,6 +142,42 @@ def test_dashboard_status_filter(client):
     assert "Tatort" not in only_canceled
 
 
+def test_dashboard_hides_canceled_and_deleted_by_default(client, tmp_path):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+
+    active_job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+    canceled_job = scheduler.create_job(
+        config, "zdf.de", "Aktenzeichen XY", start + timedelta(hours=1), end + timedelta(hours=1), 3, 12
+    )
+    scheduler.cancel_job(config, canceled_job["id"])
+
+    deleted_job = scheduler.create_job(
+        config, "zdf.de", "Geloeschte Show", start + timedelta(hours=2), end + timedelta(hours=2), 3, 12
+    )
+    file_path = tmp_path / "recording.mkv"
+    file_path.write_text("fake video content")
+    scheduler.update_job(config, deleted_job["id"], status="ready", file_path=str(file_path))
+    scheduler.update_job(config, deleted_job["id"], status="deleted")
+
+    default_view = client.get("/").get_data(as_text=True)
+    assert "Tatort" in default_view
+    assert "Aktenzeichen XY" not in default_view
+    assert "Geloeschte Show" not in default_view
+
+    with_hidden = client.get("/?alle_status=1").get_data(as_text=True)
+    assert "Tatort" in with_hidden
+    assert "Aktenzeichen XY" in with_hidden
+    assert "Geloeschte Show" in with_hidden
+
+    # Gezielter Status-Filter zeigt storniert/gelöscht trotzdem, auch ohne Haken.
+    explicit_status = client.get("/?status=canceled").get_data(as_text=True)
+    assert "Aktenzeichen XY" in explicit_status
+
+
 def test_dashboard_sort_by_titel_and_sender(client):
     from videobuddy import scheduler
 

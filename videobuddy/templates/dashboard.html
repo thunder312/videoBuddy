@@ -21,6 +21,10 @@
         {% endfor %}
       </select>
     </label>
+    <label class="checkbox-inline">
+      <input type="checkbox" name="alle_status" value="1" {% if show_hidden %}checked{% endif %} onchange="this.form.submit()">
+      Stornierte/Gelöschte einblenden
+    </label>
     <noscript><button type="submit">Filtern</button></noscript>
   </form>
 
@@ -28,6 +32,8 @@
     <p>
       {% if selected_status %}
         Keine Aufnahmen mit diesem Status.
+      {% elif not show_hidden and has_any_jobs %}
+        Keine Aufnahmen (stornierte/gelöschte sind ausgeblendet).
       {% else %}
         Noch keine Aufnahmen geplant. Unter <a href="{{ url_for('sendungen') }}">Sendungen wählen</a> loslegen.
       {% endif %}
@@ -57,6 +63,7 @@
                 <form method="post" action="{{ url_for('cancel', job_id=job.id) }}">
                   <input type="hidden" name="status" value="{{ selected_status }}">
                   <input type="hidden" name="sortierung" value="{{ sort_key }}">
+                  <input type="hidden" name="alle_status" value="{{ '1' if show_hidden else '' }}">
                   <button type="submit">Stornieren</button>
                 </form>
               {% elif job.status in ("ready", "failed") %}
@@ -64,11 +71,13 @@
                   <form method="post" action="{{ url_for('upload', job_id=job.id) }}">
                     <input type="hidden" name="status" value="{{ selected_status }}">
                     <input type="hidden" name="sortierung" value="{{ sort_key }}">
+                    <input type="hidden" name="alle_status" value="{{ '1' if show_hidden else '' }}">
                     <button type="submit">Hochladen</button>
                   </form>
                   <form method="post" action="{{ url_for('delete_recording', job_id=job.id) }}">
                     <input type="hidden" name="status" value="{{ selected_status }}">
                     <input type="hidden" name="sortierung" value="{{ sort_key }}">
+                    <input type="hidden" name="alle_status" value="{{ '1' if show_hidden else '' }}">
                     <button type="submit" class="danger">Löschen</button>
                   </form>
                 </div>
