@@ -2,8 +2,36 @@
 {% block title %}Aufnahmen - videoBuddy{% endblock %}
 {% block content %}
   <h1>Aufnahmen</h1>
+
+  <form method="get" class="filters">
+    <label>
+      Status
+      <select name="status" onchange="this.form.submit()">
+        <option value="">Alle</option>
+        {% for status, label in status_options.items() %}
+          <option value="{{ status }}" {% if status == selected_status %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Sortierung
+      <select name="sortierung" onchange="this.form.submit()">
+        {% for value, label in sort_options %}
+          <option value="{{ value }}" {% if value == sort_key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <noscript><button type="submit">Filtern</button></noscript>
+  </form>
+
   {% if not jobs %}
-    <p>Noch keine Aufnahmen geplant. Unter <a href="{{ url_for('sendungen') }}">Sendungen wählen</a> loslegen.</p>
+    <p>
+      {% if selected_status %}
+        Keine Aufnahmen mit diesem Status.
+      {% else %}
+        Noch keine Aufnahmen geplant. Unter <a href="{{ url_for('sendungen') }}">Sendungen wählen</a> loslegen.
+      {% endif %}
+    </p>
   {% else %}
     <table>
       <thead>
@@ -18,7 +46,7 @@
       <tbody>
         {% for job in jobs %}
           <tr class="status-{{ job.status }}">
-            <td>{{ job.channel }}</td>
+            <td>{{ channel_map.get(job.channel, job.channel) | channel_name }}</td>
             <td>{{ job.title }}</td>
             <td>{{ job.epg_start | local_time }} - {{ job.epg_end | local_time }}</td>
             <td><span class="badge badge-{{ job.status }}">{{ job.status | status_label }}</span>
@@ -27,14 +55,20 @@
             <td>
               {% if job.status == "scheduled" %}
                 <form method="post" action="{{ url_for('cancel', job_id=job.id) }}">
+                  <input type="hidden" name="status" value="{{ selected_status }}">
+                  <input type="hidden" name="sortierung" value="{{ sort_key }}">
                   <button type="submit">Stornieren</button>
                 </form>
               {% elif job.status in ("ready", "failed") %}
                 <div class="actions">
                   <form method="post" action="{{ url_for('upload', job_id=job.id) }}">
+                    <input type="hidden" name="status" value="{{ selected_status }}">
+                    <input type="hidden" name="sortierung" value="{{ sort_key }}">
                     <button type="submit">Hochladen</button>
                   </form>
                   <form method="post" action="{{ url_for('delete_recording', job_id=job.id) }}">
+                    <input type="hidden" name="status" value="{{ selected_status }}">
+                    <input type="hidden" name="sortierung" value="{{ sort_key }}">
                     <button type="submit" class="danger">Löschen</button>
                   </form>
                 </div>

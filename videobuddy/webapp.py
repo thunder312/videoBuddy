@@ -38,6 +38,12 @@ STATUS_LABELS = {
 # der Dropbox-Upload ist bewusst kein Automatismus, siehe README.
 MANUAL_ACTION_STATUSES = ("ready", "failed")
 
+DASHBOARD_SORT_OPTIONS = [
+    ("sendezeit", "Sendezeit (neueste zuerst)"),
+    ("sender", "Sender"),
+    ("titel", "Titel"),
+]
+
 
 def _local_time(value) -> str:
     if value is None:
@@ -68,6 +74,14 @@ def _channel_name(stream_title: str) -> str:
     Nur fürs Anzeigen - config.channel_map selbst bleibt unverändert, weil
     main.py den exakten Wert für die Stream-URL-Zuordnung braucht."""
     return re.sub(r"\s+", " ", stream_title.replace("Livestream", "")).strip()
+
+
+def _dashboard_sort_key(config: Config, sort_key: str):
+    if sort_key == "sender":
+        return lambda j: _channel_name(config.channel_map.get(j["channel"], j["channel"])).lower()
+    if sort_key == "titel":
+        return lambda j: j["title"].lower()
+    return lambda j: j.get("record_start", "")
 
 
 def _build_table_rows(candidates, show_day_separators: bool) -> list[dict]:
@@ -109,14 +123,38 @@ def create_app(config: Config | None = None) -> Flask:
                 )
         return epg_cache["entries"]
 
+    def _dashboard_redirect():
+        return redirect(
+            url_for(
+                "dashboard",
+                status=request.values.get("status") or None,
+                sortierung=request.values.get("sortierung") or None,
+            )
+        )
+
     @app.route("/")
     def dashboard():
-        jobs = sorted(
-            scheduler.list_jobs(config),
-            key=lambda j: j.get("record_start", ""),
-            reverse=True,
+        selected_status = request.args.get("status") or ""
+        sort_key = request.args.get("sortierung") or "sendezeit"
+        if sort_key not in dict(DASHBOARD_SORT_OPTIONS):
+            sort_key = "sendezeit"
+
+        jobs = scheduler.list_jobs(config)
+        if selected_status:
+            jobs = [j for j in jobs if j["status"] == selected_status]
+        jobs.sort(
+            key=_dashboard_sort_key(config, sort_key), reverse=(sort_key == "sendezeit")
         )
-        return render_template("dashboard.html", jobs=jobs)
+
+        return render_template(
+            "dashboard.html",
+            jobs=jobs,
+            channel_map=config.channel_map,
+            status_options=STATUS_LABELS,
+            selected_status=selected_status,
+            sort_options=DASHBOARD_SORT_OPTIONS,
+            sort_key=sort_key,
+        )
 
     @app.route("/jobs/<job_id>/cancel", methods=["POST"])
     def cancel(job_id):
@@ -124,31 +162,31 @@ def create_app(config: Config | None = None) -> Flask:
             flash("Aufnahme storniert.", "success")
         else:
             flash("Konnte nicht storniert werden (evtl. läuft sie schon).", "error")
-        return redirect(url_for("dashboard"))
+        return _dashboard_redirect()
 
     @app.route("/jobs/<job_id>/upload", methods=["POST"])
     def upload(job_id):
         job = scheduler.get_job(config, job_id)
         if job is None or job["status"] not in MANUAL_ACTION_STATUSES:
             flash("Konnte Upload nicht anstoßen.", "error")
-            return redirect(url_for("dashboard"))
+            return _dashboard_redirect()
         # Setzt nur den Status - der eigentliche Upload läuft im
         # Scheduler-Loop (main.py), damit der Webrequest nicht für die
         # ganze Dauer des Uploads blockiert.
         scheduler.update_job(config, job_id, status="uploading", error=None)
         flash(f'"{job["title"]}" wird im Hintergrund zu Dropbox hochgeladen.', "success")
-        return redirect(url_for("dashboard"))
+        return _dashboard_redirect()
 
     @app.route("/jobs/<job_id>/delete", methods=["POST"])
     def delete_recording(job_id):
         job = scheduler.get_job(config, job_id)
         if job is None or job["status"] not in MANUAL_ACTION_STATUSES:
             flash("Konnte nicht gelöscht werden.", "error")
-            return redirect(url_for("dashboard"))
+            return _dashboard_redirect()
         recorder.delete_files(job["file_path"])
         scheduler.update_job(config, job_id, status="deleted")
         flash(f'"{job["title"]}" gelöscht.', "success")
-        return redirect(url_for("dashboard"))
+        return _dashboard_redirect()
 
     @app.route("/sendungen")
     def sendungen():

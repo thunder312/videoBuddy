@@ -121,6 +121,43 @@ def test_upload_and_delete_only_offered_for_ready_or_failed(client, tmp_path):
     assert "Löschen" in dashboard
 
 
+def test_dashboard_status_filter(client):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    scheduled_job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+    canceled_job = scheduler.create_job(
+        config, "zdf.de", "Aktenzeichen XY", start + timedelta(hours=1), end + timedelta(hours=1), 3, 12
+    )
+    scheduler.cancel_job(config, canceled_job["id"])
+
+    only_scheduled = client.get("/?status=scheduled").get_data(as_text=True)
+    assert "Tatort" in only_scheduled
+    assert "Aktenzeichen XY" not in only_scheduled
+
+    only_canceled = client.get("/?status=canceled").get_data(as_text=True)
+    assert "Aktenzeichen XY" in only_canceled
+    assert "Tatort" not in only_canceled
+
+
+def test_dashboard_sort_by_titel_and_sender(client):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    scheduler.create_job(config, "zdf.de", "Zebra-Doku", start, end, 3, 12)
+    scheduler.create_job(config, "ard.de", "Achterbahn", start, end, 3, 12)
+
+    by_title = client.get("/?sortierung=titel").get_data(as_text=True)
+    assert by_title.index("Achterbahn") < by_title.index("Zebra-Doku")
+
+    by_sender = client.get("/?sortierung=sender").get_data(as_text=True)
+    assert by_sender.index("ARD") < by_sender.index("ZDF")
+
+
 def test_upload_route_sets_uploading_status(client, tmp_path):
     from videobuddy import scheduler
 
