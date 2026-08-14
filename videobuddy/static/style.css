@@ -4,6 +4,10 @@
   --accent: #2a6f97;
   --suggestion-bg: #eaf4fb;
   --danger: #b3261e;
+  --success: #2e7d32;
+  --warning: #b26a00;
+  --live: #c62828;
+  --muted: #757575;
 }
 
 * { box-sizing: border-box; }
@@ -83,6 +87,50 @@ tr.day-separator td {
   background: transparent;
   border: 1px solid var(--accent);
   color: var(--accent);
+}
+
+/* Status-Badges im Aufnahmen-Dashboard - Verlauf grob: neutral (geplant)
+   -> auffaellig (laeuft/live) -> neutral (wartet) -> braucht Aktion (bereit)
+   -> in Arbeit (wird hochgeladen) -> erledigt (hochgeladen, gruen) bzw.
+   abgebrochen/entfernt (grau) bzw. Fehler (rot, siehe badge-failed oben). */
+.badge-scheduled {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.badge-recording {
+  background: var(--live);
+  color: white;
+}
+
+.badge-recorded {
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--muted);
+}
+
+.badge-ready {
+  background: var(--warning);
+  color: white;
+}
+
+.badge-uploading {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.badge-uploaded {
+  background: var(--success);
+  color: white;
+}
+
+.badge-discarded,
+.badge-canceled,
+.badge-deleted {
+  background: #eee;
+  color: var(--muted);
 }
 
 .toolbar {
