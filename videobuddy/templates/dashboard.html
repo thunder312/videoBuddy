@@ -29,6 +29,15 @@
                 <form method="post" action="{{ url_for('cancel', job_id=job.id) }}">
                   <button type="submit">Stornieren</button>
                 </form>
+              {% elif job.status in ("ready", "failed") %}
+                <div class="actions">
+                  <form method="post" action="{{ url_for('upload', job_id=job.id) }}">
+                    <button type="submit">Hochladen</button>
+                  </form>
+                  <form method="post" action="{{ url_for('delete_recording', job_id=job.id) }}">
+                    <button type="submit" class="danger">Löschen</button>
+                  </form>
+                </div>
               {% endif %}
             </td>
           </tr>

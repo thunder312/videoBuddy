@@ -27,6 +27,7 @@ def client(make_config, monkeypatch):
     app = create_app(config)
     app.config["TESTING"] = True
     with app.test_client() as test_client:
+        test_client.app_config = config
         yield test_client
 
 
@@ -96,6 +97,79 @@ def test_einstellungen_get_shows_channels(client):
     assert response.status_code == 200
     assert "ard.de" in body
     assert "zdf.de" in body
+
+
+def test_upload_and_delete_only_offered_for_ready_or_failed(client, tmp_path):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+
+    # Frisch angelegt (status="scheduled") -> keine Hochladen/Löschen-Buttons
+    dashboard = client.get("/").get_data(as_text=True)
+    assert "Hochladen" not in dashboard
+    assert "Löschen" not in dashboard
+
+    file_path = tmp_path / "recording.mkv"
+    file_path.write_text("fake video content")
+    scheduler.update_job(config, job["id"], status="ready", file_path=str(file_path))
+
+    dashboard = client.get("/").get_data(as_text=True)
+    assert "Hochladen" in dashboard
+    assert "Löschen" in dashboard
+
+
+def test_upload_route_sets_uploading_status(client, tmp_path):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+    file_path = tmp_path / "recording.mkv"
+    file_path.write_text("fake video content")
+    scheduler.update_job(config, job["id"], status="ready", file_path=str(file_path))
+
+    response = client.post(f"/jobs/{job['id']}/upload", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert scheduler.get_job(config, job["id"])["status"] == "uploading"
+    assert file_path.exists()  # Upload selbst laeuft im Scheduler-Loop, nicht hier
+
+
+def test_delete_route_removes_file_and_marks_deleted(client, tmp_path):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+    file_path = tmp_path / "recording.mkv"
+    file_path.write_text("fake video content")
+    scheduler.update_job(config, job["id"], status="ready", file_path=str(file_path))
+
+    response = client.post(f"/jobs/{job['id']}/delete", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert scheduler.get_job(config, job["id"])["status"] == "deleted"
+    assert not file_path.exists()
+
+
+def test_upload_and_delete_rejected_for_scheduled_job(client):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+
+    client.post(f"/jobs/{job['id']}/upload")
+    assert scheduler.get_job(config, job["id"])["status"] == "scheduled"
+
+    client.post(f"/jobs/{job['id']}/delete")
+    assert scheduler.get_job(config, job["id"])["status"] == "scheduled"
 
 
 def test_einstellungen_post_saves_settings(client):

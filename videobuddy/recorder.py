@@ -76,3 +76,16 @@ def is_finished(pid: int | None) -> bool:
     except PermissionError:
         return False
     return False
+
+
+def delete_files(output_path: str | None) -> None:
+    """Löscht die Aufnahme + das zugehörige ffmpeg-Log, falls vorhanden.
+    Wird sowohl vom Scheduler-Loop (Mediathek-Fund) als auch von der
+    Weboberfläche (manuelles Löschen) benutzt."""
+    if not output_path:
+        return
+    if os.path.exists(output_path):
+        os.remove(output_path)
+    log_path = output_path + ".log"
+    if os.path.exists(log_path):
+        os.remove(log_path)

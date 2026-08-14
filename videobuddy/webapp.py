@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 
 from flask import Flask, flash, redirect, render_template, request, url_for
 
-from . import epg, scheduler
+from . import epg, recorder, scheduler
 from .candidates import build_candidates
 from .config import Config, load_config
 from .settings import load_settings, save_settings
@@ -25,12 +25,18 @@ STATUS_LABELS = {
     "scheduled": "geplant",
     "recording": "läuft",
     "recorded": "aufgenommen",
+    "ready": "bereit (nicht hochgeladen)",
     "uploading": "wird hochgeladen",
     "uploaded": "hochgeladen",
     "discarded": "verworfen (in Mediathek gefunden)",
     "canceled": "storniert",
+    "deleted": "gelöscht",
     "failed": "fehlgeschlagen",
 }
+
+# In diesen Status-Werten bietet das Dashboard "Hochladen" und "Löschen" an -
+# der Dropbox-Upload ist bewusst kein Automatismus, siehe README.
+MANUAL_ACTION_STATUSES = ("ready", "failed")
 
 
 def _local_time(value) -> str:
@@ -118,6 +124,30 @@ def create_app(config: Config | None = None) -> Flask:
             flash("Aufnahme storniert.", "success")
         else:
             flash("Konnte nicht storniert werden (evtl. läuft sie schon).", "error")
+        return redirect(url_for("dashboard"))
+
+    @app.route("/jobs/<job_id>/upload", methods=["POST"])
+    def upload(job_id):
+        job = scheduler.get_job(config, job_id)
+        if job is None or job["status"] not in MANUAL_ACTION_STATUSES:
+            flash("Konnte Upload nicht anstoßen.", "error")
+            return redirect(url_for("dashboard"))
+        # Setzt nur den Status - der eigentliche Upload läuft im
+        # Scheduler-Loop (main.py), damit der Webrequest nicht für die
+        # ganze Dauer des Uploads blockiert.
+        scheduler.update_job(config, job_id, status="uploading", error=None)
+        flash(f'"{job["title"]}" wird im Hintergrund zu Dropbox hochgeladen.', "success")
+        return redirect(url_for("dashboard"))
+
+    @app.route("/jobs/<job_id>/delete", methods=["POST"])
+    def delete_recording(job_id):
+        job = scheduler.get_job(config, job_id)
+        if job is None or job["status"] not in MANUAL_ACTION_STATUSES:
+            flash("Konnte nicht gelöscht werden.", "error")
+            return redirect(url_for("dashboard"))
+        recorder.delete_files(job["file_path"])
+        scheduler.update_job(config, job_id, status="deleted")
+        flash(f'"{job["title"]}" gelöscht.', "success")
         return redirect(url_for("dashboard"))
 
     @app.route("/sendungen")

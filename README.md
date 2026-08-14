@@ -2,9 +2,12 @@
 
 Persönlicher Videorecorder für die Live-TV-Streams der deutschen
 öffentlich-rechtlichen Sender, mit Weboberfläche zur Sendungsauswahl. Zeichnet
-per `ffmpeg` auf, prüft nach ein paar Tagen, ob der Film inzwischen regulär in
-der Mediathek verfügbar ist, und lädt ihn nur dann zu Dropbox hoch, wenn das
-**nicht** der Fall ist.
+per `ffmpeg` auf und prüft nach ein paar Tagen, ob der Film inzwischen regulär
+in der Mediathek verfügbar ist — falls ja, wird die Aufnahme automatisch
+verworfen. Falls nicht, wartet sie in der Aufnahmen-Liste auf eine manuelle
+Entscheidung: **Hochladen** (zu Dropbox) oder **Löschen**. Es gibt bewusst
+keinen automatischen Dropbox-Upload — viele Aufnahmen schaut man sich genau
+einmal an und löscht sie danach wieder.
 
 Der komplette Code (Scheduler-Loop, Weboberfläche, alle Module aus dem
 Architekturdiagramm) ist implementiert und getestet, `config.yaml` ist mit
@@ -42,7 +45,12 @@ noch deine Handarbeit — siehe „Offene Punkte" unten.
                  │      │
            gefunden      nicht gefunden
               │               │
-        lokal löschen   dropbox_upload.py → Dropbox, dann lokal löschen
+        lokal löschen      Status "ready" - wartet in der Aufnahmen-Liste
+        (automatisch)      auf Klick "Hochladen" oder "Löschen"
+                                │              │
+                     dropbox_upload.py    recorder.delete_files()
+                     → Dropbox, dann      (sofort, keine Bestätigung
+                     lokal löschen         durch die Weboberfläche)
 ```
 
 Zwei Python-Prozesse teilen sich denselben `data/`-Ordner:
@@ -126,7 +134,12 @@ journalctl -u videobuddy -u videobuddy-web -f
    nicht als Vorschlag markiert ist. Mit „Alle Vorschläge übernehmen" lassen
    sich alle aktuell erkannten Vorschläge auf einmal einplanen.
 3. **Aufnahmen** (Startseite) — Status aller geplanten/laufenden/erledigten
-   Aufnahmen, geplante Aufnahmen lassen sich stornieren.
+   Aufnahmen, geplante Aufnahmen lassen sich stornieren. Fertige Aufnahmen,
+   die nicht in der Mediathek gefunden wurden (Status „bereit (nicht
+   hochgeladen)"), zeigen zwei Buttons: **Hochladen** (läuft im Hintergrund
+   im Scheduler-Loop, blockiert die Weboberfläche nicht) und **Löschen**
+   (sofort, ohne Rückfrage). Bei einem fehlgeschlagenen Upload bleiben
+   beide Buttons erhalten, um es erneut zu versuchen oder aufzugeben.
 
 ## Offene Punkte, bevor das produktiv laufen sollte
 
@@ -198,6 +211,12 @@ journalctl -u videobuddy -u videobuddy-web -f
 - **`candidates.py`**: Filter auf beobachtete Sender, Ausschluss
   vergangener Sendungen, Vorschlags-Erkennung über Mindestlänge + Schlagwort
   in Titel/Kategorie per Unit-Tests abgedeckt.
+- **`main.py`** (die Statuswechsel-Logik, nicht ffmpeg/Dropbox selbst):
+  `_process_recorded` (Mediathek-Fund → automatisch verwerfen, kein Fund →
+  Status "ready" statt Auto-Upload) und `_process_uploading` (Erfolg →
+  "uploaded" + Datei gelöscht, Fehler → "failed" + Datei bleibt erhalten)
+  per Unit-Tests mit gemocktem `mediathek`/`dropbox_upload` abgedeckt
+  (`tests/test_main.py`).
 - **`webapp.py`**: alle Routen zusätzlich zu den Unit-Tests (Flask-
   Testclient mit gemockten EPG-Kandidaten) manuell end-to-end gegen den
   laufenden `flask run`-Dev-Server durchgespielt: Aufnahme über
@@ -211,7 +230,7 @@ journalctl -u videobuddy -u videobuddy-web -f
   echten Stream, `dropbox_upload.py` gegen einen echten Account, und der
   komplette Docker-Build (kein Docker-Daemon in dieser Umgebung verfügbar).
 
-Insgesamt 32 automatisierte Tests, ausführbar mit:
+Insgesamt 41 automatisierte Tests, ausführbar mit:
 
 ```bash
 pip install -r requirements-dev.txt

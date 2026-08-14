@@ -143,6 +143,21 @@ button:hover {
   color: white;
 }
 
+button.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+button.danger:hover {
+  background: var(--danger);
+  color: white;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 fieldset {
   margin-bottom: 1.25rem;
   border: 1px solid var(--border);

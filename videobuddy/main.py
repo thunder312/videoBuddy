@@ -6,7 +6,6 @@ data/-Ordner."""
 from __future__ import annotations
 
 import logging
-import os
 import re
 import signal
 import time
@@ -45,16 +44,6 @@ def _mediathek_channel_hint(stream_title: str) -> str:
     name = stream_title.replace("Livestream", "")
     name = re.sub(r"\([^)]*\)", "", name)
     return name.strip()
-
-
-def _delete_if_exists(path: str | None) -> None:
-    if not path:
-        return
-    if os.path.exists(path):
-        os.remove(path)
-    log_path = path + ".log"
-    if os.path.exists(log_path):
-        os.remove(log_path)
 
 
 def _process_scheduled(config: Config, job: dict, now: datetime) -> None:
@@ -100,6 +89,11 @@ def _process_recording(config: Config, job: dict, now: datetime) -> None:
 
 
 def _process_recorded(config: Config, job: dict, now: datetime) -> None:
+    """Prüft nur noch gegen die Mediathek und entscheidet, ob die Aufnahme
+    automatisch verworfen werden kann (schon öffentlich verfügbar). Ist sie
+    das nicht, landet sie im Status "ready" und wartet dort auf eine manuelle
+    Entscheidung (Hochladen/Löschen) über die Weboberfläche - der
+    Dropbox-Upload ist bewusst kein Automatismus mehr, siehe README."""
     due = job.get("mediathek_check_due")
     if not due or _parse_iso(due) > now:
         return
@@ -110,17 +104,31 @@ def _process_recorded(config: Config, job: dict, now: datetime) -> None:
             job["title"], channel_hint, config.mediathek_api_url
         )
         if found:
-            _delete_if_exists(job["file_path"])
+            recorder.delete_files(job["file_path"])
             scheduler.update_job(config, job["id"], status="discarded")
             logger.info("In Mediathek gefunden, lokal gelöscht: %s", job["title"])
         else:
-            scheduler.update_job(config, job["id"], status="uploading")
-            dropbox_upload.upload_file(job["file_path"], config.dropbox)
-            _delete_if_exists(job["file_path"])
-            scheduler.update_job(config, job["id"], status="uploaded")
-            logger.info("Zu Dropbox hochgeladen: %s", job["title"])
+            scheduler.update_job(config, job["id"], status="ready")
+            logger.info(
+                "Nicht in Mediathek gefunden, wartet auf manuellen Upload/Löschen: %s",
+                job["title"],
+            )
     except Exception as exc:
-        logger.exception("Mediathek-Check/Upload fehlgeschlagen: %s", job["title"])
+        logger.exception("Mediathek-Check fehlgeschlagen: %s", job["title"])
+        scheduler.update_job(config, job["id"], status="failed", error=str(exc))
+
+
+def _process_uploading(config: Config, job: dict) -> None:
+    """Wird nur erreicht, wenn die Weboberfläche den Status manuell auf
+    "uploading" gesetzt hat (Klick auf "Hochladen" bei einer "ready"- oder
+    "failed"-Aufnahme)."""
+    try:
+        dropbox_upload.upload_file(job["file_path"], config.dropbox)
+        recorder.delete_files(job["file_path"])
+        scheduler.update_job(config, job["id"], status="uploaded")
+        logger.info("Zu Dropbox hochgeladen: %s", job["title"])
+    except Exception as exc:
+        logger.exception("Dropbox-Upload fehlgeschlagen: %s", job["title"])
         scheduler.update_job(config, job["id"], status="failed", error=str(exc))
 
 
@@ -134,6 +142,8 @@ def run_once(config: Config) -> None:
             _process_recording(config, job, now)
         elif status == "recorded":
             _process_recorded(config, job, now)
+        elif status == "uploading":
+            _process_uploading(config, job)
 
 
 def run_forever(config: Config | None = None) -> None:
