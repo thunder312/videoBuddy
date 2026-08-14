@@ -148,19 +148,13 @@ journalctl -u videobuddy -u videobuddy-web -f
 
 ## Offene Punkte, bevor das produktiv laufen sollte
 
-1. **`dropbox_upload.py` (der eigentliche Upload) noch nicht live bestätigt.**
-   Die OAuth2-Zugangsdaten sind echt (Refresh Token per manuellem
-   No-Redirect-Flow erzeugt, siehe unten), aber ein Klick auf „Hochladen"
-   im Dashboard mit tatsächlicher Ankunft der Datei in Dropbox wurde noch
-   nicht durchgespielt. Einmal bei einer echten „ready"-Aufnahme testen und
-   im Dropbox-Ordner (`upload_folder` in `config.yaml`) nachschauen.
-2. **`film_keywords` ggf. weiter nachschärfen.** Die aktuellen Defaults
+1. **`film_keywords` ggf. weiter nachschärfen.** Die aktuellen Defaults
    (`film`, `drama`, `komödie`, `krimi`, `thriller`) sind gegen echte
    Kategorie-Tags der `epg_urls`-Quelle unten geprüft und treffen bewusst
    eher zu viel als zu wenig — z. B. werden auch Krimi-Serienfolgen mit
    ≥70 Minuten Länge als „Vorschlag" markiert. Über „Einstellungen" in der
    Weboberfläche jederzeit ohne Neustart anpassbar.
-3. **Container während einer laufenden Aufnahme neu starten möglichst
+2. **Container während einer laufenden Aufnahme neu starten möglichst
    vermeiden.** Docker killt beim Stop/Restart den ganzen Prozessbaum im
    Container, auch das per `start_new_session` abgekoppelte `ffmpeg` — der
    Aufnahme-Container ist zwar seit der Umstellung von `.mkv` auf `.ts`
@@ -236,10 +230,16 @@ journalctl -u videobuddy -u videobuddy-web -f
   jetzt `.ts` (MPEG-TS) statt `.mkv` als Ausgabeformat - bleibt auch nach
   einem harten Abbruch bis zum Abbruchpunkt gültig/abspielbar (siehe
   `recorder.py`-Docstring, `tests/test_recorder.py`).
-- **Dropbox-OAuth2**: echten Refresh Token über den manuellen
-  No-Redirect-Code-Flow erzeugt und in `config.yaml` eingetragen. Der
-  eigentliche Upload-Aufruf selbst ist noch nicht live bestätigt, siehe
-  „Offene Punkte".
+- **`dropbox_upload.py`**: echten Refresh Token über den manuellen
+  No-Redirect-Code-Flow erzeugt, in `config.yaml` eingetragen und live über
+  die echte Weboberfläche getestet — Klick auf „Hochladen" (Route
+  `/jobs/<id>/upload`) hat den Scheduler-Loop dazu gebracht, tatsächlich
+  einen Access Token zu holen und die Datei zu Dropbox hochzuladen, lokal
+  danach automatisch gelöscht. Dabei fiel auf: die Dropbox-App ist vom Typ
+  "App folder", Dateien landen deshalb real unter
+  `Apps/<App-Name>/<upload_folder>/...` statt direkt unter `upload_folder` -
+  siehe Kommentar in `config.example.yaml`, kein Bug, nur Dropbox-typisches
+  Sandboxing.
 
 Insgesamt 51 automatisierte Tests, ausführbar mit:
 

@@ -93,7 +93,14 @@ state_file: "./data/jobs.json"
 dropbox:
   # Dropbox-App unter https://www.dropbox.com/developers/apps anlegen
   # (Scoped App, Berechtigung files.content.write), dann per OAuth-Flow
-  # einen Refresh Token erzeugen (siehe README der "dropbox"-Python-Lib).
+  # einen Refresh Token erzeugen (siehe README).
+  #
+  # Permission type "App folder" (Standard, empfohlen) vs. "Full Dropbox":
+  # Bei "App folder" sieht/schreibt die App NUR ihre eigene Sandbox - sicherer,
+  # weil sie nichts vom Rest deiner Dropbox sehen kann. upload_folder unten
+  # ist dann relativ zu dieser Sandbox, die Dateien landen also real unter
+  # "Apps/<App-Name>/..." in deiner Dropbox, nicht an der Wurzel. Das ist
+  # normal, kein Bug - einfach dort nachschauen statt am angegebenen Pfad.
   refresh_token: "TODO"
   app_key: "TODO"
   app_secret: "TODO"
