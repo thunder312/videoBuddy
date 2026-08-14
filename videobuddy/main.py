@@ -89,11 +89,12 @@ def _process_recording(config: Config, job: dict, now: datetime) -> None:
 
 
 def _process_recorded(config: Config, job: dict, now: datetime) -> None:
-    """Prüft nur noch gegen die Mediathek und entscheidet, ob die Aufnahme
-    automatisch verworfen werden kann (schon öffentlich verfügbar). Ist sie
-    das nicht, landet sie im Status "ready" und wartet dort auf eine manuelle
-    Entscheidung (Hochladen/Löschen) über die Weboberfläche - der
-    Dropbox-Upload ist bewusst kein Automatismus mehr, siehe README."""
+    """Prüft gegen die Mediathek, löscht aber nichts automatisch - das Ergebnis
+    ist nur ein Marker (found_in_mediathek), der in der Weboberfläche als
+    Hinweis angezeigt wird. Die Aufnahme landet in beiden Fällen im Status
+    "ready" und wartet dort auf eine manuelle Entscheidung (Hochladen/
+    Löschen); der Dropbox-Upload ist bewusst kein Automatismus, siehe
+    README."""
     due = job.get("mediathek_check_due")
     if not due or _parse_iso(due) > now:
         return
@@ -103,12 +104,14 @@ def _process_recorded(config: Config, job: dict, now: datetime) -> None:
         found = mediathek.is_in_mediathek(
             job["title"], channel_hint, config.mediathek_api_url
         )
+        scheduler.update_job(
+            config, job["id"], status="ready", found_in_mediathek=found
+        )
         if found:
-            recorder.delete_files(job["file_path"])
-            scheduler.update_job(config, job["id"], status="discarded")
-            logger.info("In Mediathek gefunden, lokal gelöscht: %s", job["title"])
+            logger.info(
+                "In Mediathek gefunden (Datei bleibt erhalten): %s", job["title"]
+            )
         else:
-            scheduler.update_job(config, job["id"], status="ready")
             logger.info(
                 "Nicht in Mediathek gefunden, wartet auf manuellen Upload/Löschen: %s",
                 job["title"],

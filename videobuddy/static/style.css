@@ -79,6 +79,12 @@ tr.day-separator td {
   color: white;
 }
 
+.badge-mediathek {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
 .toolbar {
   display: flex;
   justify-content: space-between;

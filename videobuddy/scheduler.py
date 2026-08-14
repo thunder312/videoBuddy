@@ -80,6 +80,7 @@ def create_job(
             "created_at": datetime.now(timezone.utc).isoformat(),
             "recorded_at": None,
             "mediathek_check_due": None,
+            "found_in_mediathek": False,
         }
         jobs.append(new_job)
         outcome["job"] = new_job

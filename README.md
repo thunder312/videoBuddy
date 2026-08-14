@@ -3,11 +3,12 @@
 Persönlicher Videorecorder für die Live-TV-Streams der deutschen
 öffentlich-rechtlichen Sender, mit Weboberfläche zur Sendungsauswahl. Zeichnet
 per `ffmpeg` auf und prüft nach ein paar Tagen, ob der Film inzwischen regulär
-in der Mediathek verfügbar ist — falls ja, wird die Aufnahme automatisch
-verworfen. Falls nicht, wartet sie in der Aufnahmen-Liste auf eine manuelle
-Entscheidung: **Hochladen** (zu Dropbox) oder **Löschen**. Es gibt bewusst
-keinen automatischen Dropbox-Upload — viele Aufnahmen schaut man sich genau
-einmal an und löscht sie danach wieder.
+in der Mediathek verfügbar ist. Das Ergebnis ist nur ein Hinweis („auch in
+Mediathek") in der Aufnahmen-Liste — gelöscht wird nichts automatisch. Jede
+fertige Aufnahme wartet dort auf eine manuelle Entscheidung: **Hochladen**
+(zu Dropbox) oder **Löschen**. Es gibt bewusst keinen automatischen
+Dropbox-Upload und keine automatische Löschung — viele Aufnahmen schaut man
+sich genau einmal an und löscht sie danach wieder.
 
 Der komplette Code (Scheduler-Loop, Weboberfläche, alle Module aus dem
 Architekturdiagramm) ist implementiert und getestet, `config.yaml` ist mit
@@ -42,11 +43,12 @@ noch deine Handarbeit — siehe „Offene Punkte" unten.
               nach X Tagen
                     ▼
             mediathek.py  (Abgleich gegen MediathekViewWeb-API)
-                 │      │
-           gefunden      nicht gefunden
-              │               │
-        lokal löschen      Status "ready" - wartet in der Aufnahmen-Liste
-        (automatisch)      auf Klick "Hochladen" oder "Löschen"
+                    │
+                    ▼
+        Status "ready" (Datei bleibt immer erhalten), Fund nur als
+        found_in_mediathek-Marker gespeichert ("auch in Mediathek"-Badge)
+                    │
+        wartet in der Aufnahmen-Liste auf Klick "Hochladen" oder "Löschen"
                                 │              │
                      dropbox_upload.py    recorder.delete_files()
                      → Dropbox, dann      (sofort, keine Bestätigung
@@ -134,43 +136,38 @@ journalctl -u videobuddy -u videobuddy-web -f
    nicht als Vorschlag markiert ist. Mit „Alle Vorschläge übernehmen" lassen
    sich alle aktuell erkannten Vorschläge auf einmal einplanen.
 3. **Aufnahmen** (Startseite) — Status aller geplanten/laufenden/erledigten
-   Aufnahmen, geplante Aufnahmen lassen sich stornieren. Fertige Aufnahmen,
-   die nicht in der Mediathek gefunden wurden (Status „bereit (nicht
-   hochgeladen)"), zeigen zwei Buttons: **Hochladen** (läuft im Hintergrund
-   im Scheduler-Loop, blockiert die Weboberfläche nicht) und **Löschen**
-   (sofort, ohne Rückfrage). Bei einem fehlgeschlagenen Upload bleiben
+   Aufnahmen, geplante Aufnahmen lassen sich stornieren. Fertige Aufnahmen
+   (Status „bereit (nicht hochgeladen)") zeigen zwei Buttons: **Hochladen**
+   (läuft im Hintergrund im Scheduler-Loop, blockiert die Weboberfläche
+   nicht) und **Löschen** (sofort, ohne Rückfrage) — unabhängig davon, ob
+   die Sendung in der Mediathek gefunden wurde. Ein Fund wird nur als
+   Zusatz-Badge „auch in Mediathek" angezeigt, ändert aber nichts an der
+   Datei; die Entscheidung bleibt immer bei dir. Bei einem fehlgeschlagenen
+   Upload bleiben
    beide Buttons erhalten, um es erneut zu versuchen oder aufzugeben.
 
 ## Offene Punkte, bevor das produktiv laufen sollte
 
-1. **Dockerfile/entrypoint.sh sind nicht in einer echten Docker-Umgebung
-   gebaut/getestet worden** (auf keiner der Maschinen, auf denen dieses
-   Projekt bisher bearbeitet wurde, stand ein Docker-Daemon zur Verfügung —
-   auch kein WSL als Ausweichmöglichkeit). Die Python-Logik dahinter
-   (State-Store, Scheduler, Webapp-Routen, EPG-Parsing) ist getestet, aber
-   `docker compose up --build` einmal selbst durchlaufen lassen und die
-   Logs prüfen, bevor du dich darauf verlässt. Ersatzweise wurde der
-   `pip install -r requirements.txt`-Schritt aus dem Dockerfile isoliert in
-   einer frischen venv nachgestellt (installiert sauber) und
-   `entrypoint.sh` auf Shell-Syntaxfehler geprüft (`sh -n entrypoint.sh`,
-   OK).
-2. **`recorder.py` (ffmpeg) und `dropbox_upload.py` nicht live getestet.**
-   Beides braucht einen echten HLS-Stream bzw. einen echten Dropbox-Account
-   mit gültigem Refresh-Token — nicht Teil dieser Sitzung. Vor dem
-   produktiven Einsatz einmal eine kurze Testaufnahme über die
-   Weboberfläche anstoßen und den kompletten Ablauf bis zum Dropbox-Upload
-   (oder Verwerfen, falls in der Mediathek gefunden) beobachten
-   (`journalctl -u videobuddy -f` bzw. `docker compose logs -f`).
-3. **Dropbox-Zugangsdaten in `config.yaml` sind noch Platzhalter.**
-   `refresh_token`/`app_key`/`app_secret` müssen aus deinem eigenen
-   Dropbox-Account stammen (siehe Kommentar in `config.example.yaml`) —
-   das kann niemand für dich vorausfüllen.
-4. **`film_keywords` ggf. weiter nachschärfen.** Die aktuellen Defaults
+1. **`dropbox_upload.py` (der eigentliche Upload) noch nicht live bestätigt.**
+   Die OAuth2-Zugangsdaten sind echt (Refresh Token per manuellem
+   No-Redirect-Flow erzeugt, siehe unten), aber ein Klick auf „Hochladen"
+   im Dashboard mit tatsächlicher Ankunft der Datei in Dropbox wurde noch
+   nicht durchgespielt. Einmal bei einer echten „ready"-Aufnahme testen und
+   im Dropbox-Ordner (`upload_folder` in `config.yaml`) nachschauen.
+2. **`film_keywords` ggf. weiter nachschärfen.** Die aktuellen Defaults
    (`film`, `drama`, `komödie`, `krimi`, `thriller`) sind gegen echte
    Kategorie-Tags der `epg_urls`-Quelle unten geprüft und treffen bewusst
    eher zu viel als zu wenig — z. B. werden auch Krimi-Serienfolgen mit
    ≥70 Minuten Länge als „Vorschlag" markiert. Über „Einstellungen" in der
    Weboberfläche jederzeit ohne Neustart anpassbar.
+3. **Container während einer laufenden Aufnahme neu starten möglichst
+   vermeiden.** Docker killt beim Stop/Restart den ganzen Prozessbaum im
+   Container, auch das per `start_new_session` abgekoppelte `ffmpeg` — der
+   Aufnahme-Container ist zwar seit der Umstellung von `.mkv` auf `.ts`
+   (siehe unten) truncation-sicher, ein abgebrochener Mitschnitt bleibt
+   also bis zum Abbruchpunkt gültig, aber eben trotzdem unvollständig. Vor
+   einem `docker compose restart`/`down` kurz im Dashboard prüfen, ob
+   gerade eine Aufnahme „läuft".
 
 ## Was schon getestet ist (und wie)
 
@@ -212,10 +209,11 @@ journalctl -u videobuddy -u videobuddy-web -f
   vergangener Sendungen, Vorschlags-Erkennung über Mindestlänge + Schlagwort
   in Titel/Kategorie per Unit-Tests abgedeckt.
 - **`main.py`** (die Statuswechsel-Logik, nicht ffmpeg/Dropbox selbst):
-  `_process_recorded` (Mediathek-Fund → automatisch verwerfen, kein Fund →
-  Status "ready" statt Auto-Upload) und `_process_uploading` (Erfolg →
-  "uploaded" + Datei gelöscht, Fehler → "failed" + Datei bleibt erhalten)
-  per Unit-Tests mit gemocktem `mediathek`/`dropbox_upload` abgedeckt
+  `_process_recorded` (Mediathek-Check setzt in beiden Fällen Status "ready"
+  und lässt die Datei unangetastet, der Fund landet nur als
+  `found_in_mediathek`-Marker) und `_process_uploading` (Erfolg → "uploaded"
+  + Datei gelöscht, Fehler → "failed" + Datei bleibt erhalten) per
+  Unit-Tests mit gemocktem `mediathek`/`dropbox_upload` abgedeckt
   (`tests/test_main.py`).
 - **`webapp.py`**: alle Routen zusätzlich zu den Unit-Tests (Flask-
   Testclient mit gemockten EPG-Kandidaten) manuell end-to-end gegen den
@@ -226,11 +224,24 @@ journalctl -u videobuddy -u videobuddy-web -f
   EPG-Quelle, echte `channel_map`) durchlaufen: `/sendungen` zeigte reale,
   aktuelle Sendungen mit plausiblen Spielfilm-Vorschlägen (z. B. „Der
   talentierte Mr. Ripley", „Papillon") aus allen 15 beobachteten Sendern.
-- **Nicht getestet** (siehe „Offene Punkte"): `recorder.py` gegen einen
-  echten Stream, `dropbox_upload.py` gegen einen echten Account, und der
-  komplette Docker-Build (kein Docker-Daemon in dieser Umgebung verfügbar).
+- **Docker-Build + `recorder.py`**: echt auf dem Zielserver (Athene) gebaut
+  und betrieben, nicht nur simuliert - `docker compose up -d --build` lief
+  mehrfach durch (Erstbuild, Rebuilds nach `git pull`), inklusive einer
+  echten Aufnahme über die volle Pipeline (EPG → Job anlegen → Scheduler →
+  `ffmpeg` → fertige Datei). Dabei kam ein echter Fehler ans Licht: ein
+  `docker compose restart` mitten in einer laufenden Aufnahme hat die
+  `.mkv`-Datei fast komplett zerstört (Matroska braucht einen sauberen
+  Trailer/Index, den ein harter Kill nicht schreibt - `ffprobe` zeigte
+  41:49 Min. Dauer im Header, aber nur ~72 Sekunden echte Daten). Deshalb
+  jetzt `.ts` (MPEG-TS) statt `.mkv` als Ausgabeformat - bleibt auch nach
+  einem harten Abbruch bis zum Abbruchpunkt gültig/abspielbar (siehe
+  `recorder.py`-Docstring, `tests/test_recorder.py`).
+- **Dropbox-OAuth2**: echten Refresh Token über den manuellen
+  No-Redirect-Code-Flow erzeugt und in `config.yaml` eingetragen. Der
+  eigentliche Upload-Aufruf selbst ist noch nicht live bestätigt, siehe
+  „Offene Punkte".
 
-Insgesamt 41 automatisierte Tests, ausführbar mit:
+Insgesamt 51 automatisierte Tests, ausführbar mit:
 
 ```bash
 pip install -r requirements-dev.txt

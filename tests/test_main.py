@@ -22,7 +22,12 @@ def _make_recorded_job(make_config, tmp_path, mediathek_check_due):
     return config, job, file_path
 
 
-def test_process_recorded_discards_when_found_in_mediathek(make_config, tmp_path, monkeypatch):
+def test_process_recorded_marks_ready_and_flags_when_found_in_mediathek(
+    make_config, tmp_path, monkeypatch
+):
+    """Kein Automatismus mehr - ein Mediathek-Fund loescht die Datei nicht,
+    sondern setzt nur den found_in_mediathek-Marker fuer die Weboberflaeche.
+    Die Entscheidung (Hochladen/Loeschen) bleibt beim Nutzer."""
     config, job, file_path = _make_recorded_job(
         make_config, tmp_path, datetime.now(timezone.utc) - timedelta(hours=1)
     )
@@ -31,8 +36,9 @@ def test_process_recorded_discards_when_found_in_mediathek(make_config, tmp_path
     main._process_recorded(config, job, datetime.now(timezone.utc))
 
     updated = scheduler.get_job(config, job["id"])
-    assert updated["status"] == "discarded"
-    assert not file_path.exists()
+    assert updated["status"] == "ready"
+    assert updated["found_in_mediathek"] is True
+    assert file_path.exists()
 
 
 def test_process_recorded_marks_ready_when_not_found(make_config, tmp_path, monkeypatch):
@@ -47,6 +53,7 @@ def test_process_recorded_marks_ready_when_not_found(make_config, tmp_path, monk
 
     updated = scheduler.get_job(config, job["id"])
     assert updated["status"] == "ready"
+    assert updated["found_in_mediathek"] is False
     assert file_path.exists()
 
 
