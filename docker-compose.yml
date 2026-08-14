@@ -8,6 +8,11 @@ services:
     volumes:
       - ./config.yaml:/app/config.yaml:ro
       - ./data:/app/data
+      # Eigenes Volume fuer Aufnahmen, getrennt von ./data (das nur die
+      # kleinen jobs.json/settings.json enthaelt). Zeig auf eine Platte mit
+      # genug Platz, z. B.:
+      #   - /mnt/storage/videobuddy-recordings:/app/recordings
+      - ./recordings:/app/recordings
     environment:
       - TZ=Europe/Berlin
       # Fester Wert sorgt dafuer, dass eingeloggte Sessions/Flash-Meldungen

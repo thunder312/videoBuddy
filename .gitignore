@@ -1,5 +1,6 @@
 config.yaml
 data/
+recordings/
 __pycache__/
 *.pyc
 .venv/

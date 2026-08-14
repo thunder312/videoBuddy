@@ -81,9 +81,15 @@ docker compose up -d --build
 Weboberfläche danach unter `http://athene:8080` (oder wie auch immer Athene
 in deinem Netz erreichbar ist). Logs: `docker compose logs -f`.
 
-`config.yaml` und `data/` liegen als Volumes außerhalb des Images (siehe
-`docker-compose.yml`) — ein `docker compose up -d --build` nach einem
-`git pull` verliert weder Zugangsdaten noch den Aufnahmeplan.
+`config.yaml`, `data/` (jobs.json/settings.json) und `recordings/` liegen
+als eigene Volumes außerhalb des Images (siehe `docker-compose.yml`) — ein
+`docker compose up -d --build` nach einem `git pull` verliert weder
+Zugangsdaten noch den Aufnahmeplan. `recordings/` ist bewusst ein eigenes
+Volume, getrennt von `data/`: dort landen die (teils mehrere GB großen)
+Videodateien während der Aufnahme, bevor sie — erst nach dem
+Mediathek-Check, nie live während der Aufnahme — zu Dropbox hochgeladen
+werden. Zeig es in `docker-compose.yml` auf eine Platte mit genug Platz,
+z. B. `/mnt/storage/videobuddy-recordings:/app/recordings`.
 
 ## Bare-Metal statt Docker
 
@@ -233,3 +239,6 @@ oder ein VPN davorsetzen, bevor Port 8080 nach außen geht.
 Ein zweistündiger Film in ordentlicher Qualität liegt schnell bei mehreren
 GB. Über „Nur Vorschläge zeigen" plus eine bewusst kleine Senderauswahl in
 den Einstellungen lässt sich die Menge an Aufnahmen gut im Rahmen halten.
+`recordings/` (siehe oben, eigenes Volume) sollte deshalb auf eine Platte
+mit ausreichend Platz zeigen — dort liegen die Aufnahmen zwischen
+Aufnahmeende und Dropbox-Upload bzw. Verwerfen.

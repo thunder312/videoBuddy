@@ -77,8 +77,17 @@ epg_refresh_minutes: 360
 # Wie oft (Sekunden) die Job-Queue auf fällige Starts/Stopps geprüft wird
 poll_interval_seconds: 30
 
-# Lokales Zwischenlager, bevor eine Aufnahme hochgeladen oder verworfen wird
-recording_dir: "./data/recordings"
+# Lokales Zwischenlager, bevor eine Aufnahme (nach dem Mediathek-Check)
+# hochgeladen oder verworfen wird. ffmpeg schreibt die Aufnahme direkt
+# hierhin und erst danach - nie live waehrend der Aufnahme - geht sie zu
+# Dropbox. Bewusst NICHT unter ./data (siehe state_file), damit du diesen
+# Pfad im Docker-Setup separat auf eine Platte mit genug Speicherplatz
+# mounten kannst (siehe docker-compose.yml); im Bare-Metal-Betrieb kannst
+# du hier direkt einen beliebigen absoluten Pfad eintragen.
+recording_dir: "./recordings"
+
+# Klein, aber muss dauerhaft erreichbar sein (kein Netzlaufwerk mit
+# Aussetzern) - hier liegen jobs.json und settings.json.
 state_file: "./data/jobs.json"
 
 dropbox:

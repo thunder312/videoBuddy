@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 venv/
 data/
+recordings/
 config.yaml
 .git/
 .gitignore
