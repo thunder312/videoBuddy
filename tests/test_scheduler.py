@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from oerr_pvr import scheduler
+from videobuddy import scheduler
 
 
 def _times():

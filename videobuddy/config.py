@@ -41,7 +41,7 @@ class Config:
 
 
 def load_config(path: str | None = None) -> Config:
-    path = path or os.environ.get("OERR_PVR_CONFIG", "config.yaml")
+    path = path or os.environ.get("VIDEOBUDDY_CONFIG", "config.yaml")
     with open(path, "r", encoding="utf-8") as fh:
         raw = yaml.safe_load(fh)
 

@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}oerr-pvr{% endblock %}</title>
+  <title>{% block title %}videoBuddy{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <nav>
-    <a class="brand" href="{{ url_for('dashboard') }}">oerr-pvr</a>
+    <a class="brand" href="{{ url_for('dashboard') }}">videoBuddy</a>
     <a href="{{ url_for('dashboard') }}">Aufnahmen</a>
     <a href="{{ url_for('sendungen') }}">Sendungen wählen</a>
     <a href="{{ url_for('einstellungen') }}">Einstellungen</a>

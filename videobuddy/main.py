@@ -1,6 +1,6 @@
 """Scheduler-Loop (siehe README): führt nur bereits ausgewählte Aufnahmen
 zur richtigen Zeit aus, fragt selbst kein EPG ab. Läuft als eigener Prozess
-neben dem Webserver (`python -m oerr_pvr.main`), beide teilen sich denselben
+neben dem Webserver (`python -m videobuddy.main`), beide teilen sich denselben
 data/-Ordner."""
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 from . import dropbox_upload, mediathek, recorder, scheduler, streams
 from .config import Config, load_config
 
-logger = logging.getLogger("oerr_pvr.main")
+logger = logging.getLogger("videobuddy.main")
 
 # Zusätzlicher Puffer nach record_end, bevor eine Aufnahme trotz laufender
 # PID als beendet erzwungen wird (Sicherheitsnetz falls is_finished() eine

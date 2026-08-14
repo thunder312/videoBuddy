@@ -1,6 +1,6 @@
 import os
 
-from oerr_pvr.streams import parse_live_streams
+from videobuddy.streams import parse_live_streams
 
 FIXTURE_PATH = os.path.join(os.path.dirname(__file__), "fixtures", "live_streams_sample.json")
 

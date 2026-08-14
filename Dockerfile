@@ -11,7 +11,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY oerr_pvr/ oerr_pvr/
+COPY videobuddy/ videobuddy/
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 

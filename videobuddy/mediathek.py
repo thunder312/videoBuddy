@@ -6,7 +6,7 @@ verifiziert (POST mit Content-Type text/plain, Response unter
 result.results[]) - der End-to-End-Roundtrip gegen die echte API wurde in
 dieser Sitzung nicht getestet (siehe README), dafür ist die CLI unten da:
 
-    python -m oerr_pvr.mediathek "Titel" "Sender"
+    python -m videobuddy.mediathek "Titel" "Sender"
 """
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ def is_in_mediathek(
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print('Aufruf: python -m oerr_pvr.mediathek "Titel" "Sender"', file=sys.stderr)
+        print('Aufruf: python -m videobuddy.mediathek "Titel" "Sender"', file=sys.stderr)
         sys.exit(1)
 
     cli_title, cli_channel = sys.argv[1], sys.argv[2]

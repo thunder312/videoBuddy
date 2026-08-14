@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timezone
 
-from oerr_pvr.epg import parse_xmltv
+from videobuddy.epg import parse_xmltv
 
 FIXTURE_PATH = os.path.join(os.path.dirname(__file__), "fixtures", "sample_epg.xml")
 

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
-from oerr_pvr.candidates import build_candidates
-from oerr_pvr.epg import EpgEntry
+from videobuddy.candidates import build_candidates
+from videobuddy.epg import EpgEntry
 
 NOW = datetime(2026, 6, 1, 12, 0, tzinfo=timezone.utc)
 

@@ -3,7 +3,7 @@
 # Container und leitet SIGTERM/SIGINT sauber an beide weiter.
 set -eu
 
-CONFIG_PATH="${OERR_PVR_CONFIG:-/app/config.yaml}"
+CONFIG_PATH="${VIDEOBUDDY_CONFIG:-/app/config.yaml}"
 if [ ! -f "$CONFIG_PATH" ]; then
   echo "FEHLER: $CONFIG_PATH nicht gefunden." >&2
   echo "config.example.yaml nach config.yaml kopieren, ausfuellen und" >&2
@@ -11,7 +11,7 @@ if [ ! -f "$CONFIG_PATH" ]; then
   exit 1
 fi
 
-python -m oerr_pvr.main &
+python -m videobuddy.main &
 SCHEDULER_PID=$!
 echo "Scheduler-Loop gestartet (PID $SCHEDULER_PID)"
 
@@ -30,7 +30,7 @@ trap term_handler TERM INT
 # Webserver selbst waeren dank der Dateisperre in state.py auch mehrere
 # Worker unproblematisch, sind aber fuer den Hausgebrauch unnoetig.
 gunicorn --bind 0.0.0.0:8080 --workers 1 --threads 4 --timeout 120 \
-  "oerr_pvr.webapp:create_app()" &
+  "videobuddy.webapp:create_app()" &
 GUNICORN_PID=$!
 echo "Webserver gestartet (PID $GUNICORN_PID), erreichbar auf Port 8080"
 

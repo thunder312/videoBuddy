@@ -2,9 +2,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from oerr_pvr import epg
-from oerr_pvr.epg import EpgEntry
-from oerr_pvr.webapp import create_app
+from videobuddy import epg
+from videobuddy.epg import EpgEntry
+from videobuddy.webapp import create_app
 
 
 @pytest.fixture

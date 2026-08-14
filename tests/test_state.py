@@ -1,6 +1,6 @@
 import threading
 
-from oerr_pvr.state import JsonFileStore
+from videobuddy.state import JsonFileStore
 
 
 def test_modify_is_race_free_under_concurrent_threads(tmp_path):

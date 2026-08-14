@@ -1,4 +1,4 @@
-# oerr-pvr
+# videoBuddy
 
 Persönlicher Videorecorder für die Live-TV-Streams der deutschen
 öffentlich-rechtlichen Sender, mit Weboberfläche zur Sendungsauswahl. Zeichnet
@@ -46,9 +46,9 @@ deine Handarbeit — siehe „Offene Punkte" unten.
 
 Zwei Python-Prozesse teilen sich denselben `data/`-Ordner:
 
-- **Scheduler-Loop** (`python -m oerr_pvr.main`) — führt nur bereits
+- **Scheduler-Loop** (`python -m videobuddy.main`) — führt nur bereits
   ausgewählte Aufnahmen zur richtigen Zeit aus, fragt selbst kein EPG ab.
-- **Webserver** (`gunicorn oerr_pvr.webapp:create_app()`) — zeigt EPG-Kandidaten,
+- **Webserver** (`gunicorn videobuddy.webapp:create_app()`) — zeigt EPG-Kandidaten,
   nimmt deine Auswahl entgegen, zeigt den Status laufender/erledigter Jobs,
   verwaltet Einstellungen (Sender, Suchbegriffe, Aufnahmepuffer).
 
@@ -71,7 +71,7 @@ Zwei getrennte Ablagen mit Absicht:
 ## Setup mit Docker (empfohlen)
 
 ```bash
-git clone <dein-repo> oerr-pvr && cd oerr-pvr
+git clone <dein-repo> videoBuddy && cd videoBuddy
 cp config.example.yaml config.yaml
 # config.yaml ausfüllen, siehe Kommentare darin und "Offene Punkte" unten
 docker compose up -d --build
@@ -95,18 +95,18 @@ pip install -r requirements.txt
 cp config.example.yaml config.yaml   # ausfüllen
 
 # Testlauf von Hand, in zwei Terminals:
-python -m oerr_pvr.main                                    # Scheduler
-gunicorn --bind 0.0.0.0:8080 "oerr_pvr.webapp:create_app()" # Weboberfläche
+python -m videobuddy.main                                    # Scheduler
+gunicorn --bind 0.0.0.0:8080 "videobuddy.webapp:create_app()" # Weboberfläche
 ```
 
 Für den Dauerbetrieb zwei systemd-Units (beide im `systemd/`-Ordner,
 Platzhalter für User/Pfad darin anpassen):
 
 ```bash
-sudo cp systemd/oerr-pvr.service systemd/oerr-pvr-web.service /etc/systemd/system/
+sudo cp systemd/videobuddy.service systemd/videobuddy-web.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now oerr-pvr oerr-pvr-web
-journalctl -u oerr-pvr -u oerr-pvr-web -f
+sudo systemctl enable --now videobuddy videobuddy-web
+journalctl -u videobuddy -u videobuddy-web -f
 ```
 
 ## Benutzung
@@ -147,7 +147,7 @@ journalctl -u oerr-pvr -u oerr-pvr-web -f
    produktiven Einsatz einmal eine kurze Testaufnahme über die
    Weboberfläche anstoßen und den kompletten Ablauf bis zum Dropbox-Upload
    (oder Verwerfen, falls in der Mediathek gefunden) beobachten
-   (`journalctl -u oerr-pvr -f` bzw. `docker compose logs -f`).
+   (`journalctl -u videobuddy -f` bzw. `docker compose logs -f`).
 
 ## Was schon getestet ist (und wie)
 
@@ -161,7 +161,7 @@ journalctl -u oerr-pvr -u oerr-pvr-web -f
   zusätzlich per Unit-Test mit einem echten Auszug der Datei abgesichert
   (`tests/test_streams.py`).
 - **`mediathek.py`**: live gegen die echte MediathekViewWeb-API getestet
-  (`python -m oerr_pvr.mediathek "Tagesschau" "ARD"` lieferte reale,
+  (`python -m videobuddy.mediathek "Tagesschau" "ARD"` lieferte reale,
   aktuelle Treffer). Anfrage-/Antwortformat sind damit bestätigt richtig.
 - **`epg.py`**: XMLTV-Parsing, Zeitzonenumrechnung und Spielfilm-Erkennung
   gegen eine handgebaute Beispieldatei verifiziert (`tests/test_epg.py`).

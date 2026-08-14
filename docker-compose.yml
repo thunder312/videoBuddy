@@ -1,7 +1,7 @@
 services:
-  oerr-pvr:
+  videobuddy:
     build: .
-    container_name: oerr-pvr
+    container_name: videobuddy
     restart: unless-stopped
     ports:
       - "8080:8080"

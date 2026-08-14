@@ -1,6 +1,6 @@
 import pytest
 
-from oerr_pvr.config import Config, DropboxConfig
+from videobuddy.config import Config, DropboxConfig
 
 
 @pytest.fixture
