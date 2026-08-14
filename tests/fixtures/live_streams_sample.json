@@ -1,0 +1,7 @@
+{
+"Filmliste" : [ "22.10.2018, 19:29", "22.10.2018, 19:29", "3", "MSearch [Rel: 550] - Compiled: 29.05.2016 / 16:16:25", "92bdd1d2c16779f916e64d0bcf493c81" ],
+"Filmliste" : [ "Sender", "Thema", "Titel", "Datum", "Zeit", "Dauer", "Größe [MB]", "Beschreibung", "Url", "Website", "Untertitel", "UrlRTMP", "Url_Klein", "UrlRTMP_Klein", "Url_HD", "UrlRTMP_HD", "DatumL", "Url_History", "Geo", "neu" ],
+"X" : [ "ARD", "Livestream", "ARD Livestream", "", "", "", "", "", "https://example.invalid/ard/master.m3u8", "http://ard.de", "", "", "", "", "https://example.invalid/ard/hd/master.m3u8", "", "", "", "", "" ],
+"X" : [ "ZDF", "Livestream", "ZDF Livestream", "", "", "", "", "", "https://example.invalid/zdf/master.m3u8", "http://zdf.de", "", "", "", "", "", "", "", "", "", "" ],
+"X" : [ "3Sat", "Livestream", "3Sat Livestream", "", "", "", "", "", "https://example.invalid/3sat/master.m3u8", "http://3sat.de", "", "", "", "", "", "", "", "", "", "" ]
+}

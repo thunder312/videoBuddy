@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Einstellungen - oerr-pvr{% endblock %}
+{% block content %}
+  <h1>Einstellungen</h1>
+  <form method="post" class="settings-form">
+    <fieldset>
+      <legend>Beobachtete Sender</legend>
+      {% for channel_id, stream_title in channel_map.items() %}
+        <label class="checkbox">
+          <input type="checkbox" name="watched_channels" value="{{ channel_id }}"
+            {% if channel_id in settings.watched_channels %}checked{% endif %}>
+          {{ stream_title }} ({{ channel_id }})
+        </label>
+      {% endfor %}
+    </fieldset>
+
+    <fieldset>
+      <legend>Spielfilm-Suchbegriffe (ein Begriff pro Zeile)</legend>
+      <textarea name="film_keywords" rows="6">{{ settings.film_keywords | join("\n") }}</textarea>
+    </fieldset>
+
+    <fieldset>
+      <legend>Mindestlänge und Aufnahmepuffer</legend>
+      <label>
+        Mindestlänge für Spielfilm-Vorschläge (Minuten)
+        <input type="number" name="min_duration_minutes" min="0" value="{{ settings.min_duration_minutes }}">
+      </label>
+      <label>
+        Puffer vor Sendebeginn (Minuten)
+        <input type="number" name="buffer_before_minutes" min="0" value="{{ settings.buffer_before_minutes }}">
+      </label>
+      <label>
+        Puffer nach Sendeende (Minuten)
+        <input type="number" name="buffer_after_minutes" min="0" value="{{ settings.buffer_after_minutes }}">
+      </label>
+    </fieldset>
+
+    <button type="submit">Speichern</button>
+  </form>
+{% endblock %}

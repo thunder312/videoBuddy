@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tv>
+  <channel id="ard.de">
+    <display-name>Das Erste</display-name>
+  </channel>
+  <programme start="20260101200000 +0100" stop="20260101213000 +0100" channel="ard.de">
+    <title lang="de">Tatort</title>
+    <category lang="de">Krimi</category>
+    <desc lang="de">Ein Krimi.</desc>
+  </programme>
+  <programme start="20260101213000 +0100" stop="20260101233000 +0100" channel="ard.de">
+    <title lang="de">Der Blaue Planet</title>
+    <category lang="de">Spielfilm</category>
+  </programme>
+  <programme start="20260101233000 +0100" stop="20260101234500 +0100" channel="ard.de">
+    <title lang="de">Tagesschau</title>
+    <category lang="de">Nachrichten</category>
+  </programme>
+</tv>

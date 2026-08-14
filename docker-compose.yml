@@ -1,0 +1,17 @@
+services:
+  oerr-pvr:
+    build: .
+    container_name: oerr-pvr
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data:/app/data
+    environment:
+      - TZ=Europe/Berlin
+      # Fester Wert sorgt dafuer, dass eingeloggte Sessions/Flash-Meldungen
+      # einen Container-Neustart ueberleben. Ohne diese Zeile wird bei jedem
+      # Start ein zufaelliger Schluessel erzeugt (auch in Ordnung, da die
+      # Weboberflaeche kein Login hat, nur Flash-Meldungen betroffen sind).
+      # - SECRET_KEY=setze-hier-einen-zufaelligen-langen-string

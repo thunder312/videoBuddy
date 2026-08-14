@@ -1,0 +1,132 @@
+:root {
+  color-scheme: light dark;
+  --border: #ccc;
+  --accent: #2a6f97;
+  --suggestion-bg: #eaf4fb;
+  --danger: #b3261e;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  line-height: 1.4;
+}
+
+nav {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+nav .brand {
+  font-weight: bold;
+  margin-right: 1rem;
+}
+
+nav a {
+  text-decoration: none;
+  color: var(--accent);
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+tr.suggestion {
+  background: var(--suggestion-bg);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 0.75rem;
+  font-size: 0.8rem;
+  background: #ddd;
+}
+
+.badge-suggestion {
+  background: var(--accent);
+  color: white;
+}
+
+.badge-failed {
+  background: var(--danger);
+  color: white;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.flashes {
+  list-style: none;
+  padding: 0;
+}
+
+.flash {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.25rem;
+  background: #eee;
+}
+
+.flash-success { background: #d9f2df; }
+.flash-error { background: #fbdede; }
+
+form { margin: 0; }
+
+button {
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--accent);
+  background: white;
+  color: var(--accent);
+  border-radius: 0.25rem;
+}
+
+button:hover {
+  background: var(--accent);
+  color: white;
+}
+
+fieldset {
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+}
+
+.checkbox {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.settings-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+textarea, input[type="number"] {
+  width: 100%;
+  max-width: 24rem;
+}

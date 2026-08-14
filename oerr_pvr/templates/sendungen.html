@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Sendungen wählen - oerr-pvr{% endblock %}
+{% block content %}
+  <h1>Sendungen wählen</h1>
+  <div class="toolbar">
+    {% if only_suggestions %}
+      <a href="{{ url_for('sendungen') }}">Alle Sendungen zeigen</a>
+    {% else %}
+      <a href="{{ url_for('sendungen', nur_vorschlaege='1') }}">Nur Vorschläge zeigen</a>
+    {% endif %}
+    <form method="post" action="{{ url_for('alle_uebernehmen') }}">
+      <button type="submit">Alle Vorschläge übernehmen</button>
+    </form>
+  </div>
+
+  {% if not candidates %}
+    <p>Keine {{ "Vorschläge" if only_suggestions else "Sendungen" }} im EPG-Zeitraum gefunden.</p>
+  {% else %}
+    <table>
+      <thead>
+        <tr>
+          <th>Sender</th>
+          <th>Titel</th>
+          <th>Sendezeit</th>
+          <th>Dauer</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in candidates %}
+          <tr class="{{ 'suggestion' if c.is_suggestion else '' }}">
+            <td>{{ c.channel }}</td>
+            <td>
+              {% if c.is_suggestion %}<span class="badge badge-suggestion">Vorschlag</span>{% endif %}
+              {{ c.title }}
+            </td>
+            <td>{{ c.start | local_time }} - {{ c.stop | local_time }}</td>
+            <td>{{ c.duration_minutes | round | int }} min</td>
+            <td>
+              <form method="post" action="{{ url_for('aufnehmen') }}">
+                <input type="hidden" name="channel" value="{{ c.channel }}">
+                <input type="hidden" name="title" value="{{ c.title }}">
+                <input type="hidden" name="epg_start" value="{{ c.start.isoformat() }}">
+                <input type="hidden" name="epg_end" value="{{ c.stop.isoformat() }}">
+                <input type="hidden" name="nur_vorschlaege" value="{{ '1' if only_suggestions else '' }}">
+                <button type="submit">Aufnehmen</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}

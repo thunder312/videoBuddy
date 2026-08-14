@@ -1,0 +1,17 @@
+[Unit]
+Description=oerr-pvr Scheduler-Loop
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# TODO: User/WorkingDirectory/ExecStart an deine Installation anpassen.
+User=CHANGE_ME
+WorkingDirectory=/opt/oerr-pvr
+Environment=OERR_PVR_CONFIG=/opt/oerr-pvr/config.yaml
+ExecStart=/opt/oerr-pvr/.venv/bin/python -m oerr_pvr.main
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

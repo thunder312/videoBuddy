@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Aufnahmen - oerr-pvr{% endblock %}
+{% block content %}
+  <h1>Aufnahmen</h1>
+  {% if not jobs %}
+    <p>Noch keine Aufnahmen geplant. Unter <a href="{{ url_for('sendungen') }}">Sendungen wählen</a> loslegen.</p>
+  {% else %}
+    <table>
+      <thead>
+        <tr>
+          <th>Sender</th>
+          <th>Titel</th>
+          <th>Sendezeit</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in jobs %}
+          <tr class="status-{{ job.status }}">
+            <td>{{ job.channel }}</td>
+            <td>{{ job.title }}</td>
+            <td>{{ job.epg_start | local_time }} - {{ job.epg_end | local_time }}</td>
+            <td><span class="badge badge-{{ job.status }}">{{ job.status | status_label }}</span>
+              {% if job.status == "failed" and job.error %}<br><small>{{ job.error }}</small>{% endif %}
+            </td>
+            <td>
+              {% if job.status == "scheduled" %}
+                <form method="post" action="{{ url_for('cancel', job_id=job.id) }}">
+                  <button type="submit">Stornieren</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}

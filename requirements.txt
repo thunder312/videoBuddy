@@ -1,0 +1,10 @@
+requests>=2.31,<3
+PyYAML>=6.0,<7
+dropbox>=12.0,<13
+Flask>=3.0,<4
+gunicorn>=22.0,<23
+tzdata>=2024.1; sys_platform == "win32"
+
+# Nicht per pip: ffmpeg muss als Systempaket verfuegbar sein (im Docker-Image
+# bereits enthalten, siehe Dockerfile; fuer den Betrieb ohne Docker
+# "sudo apt install ffmpeg" auf Athene).

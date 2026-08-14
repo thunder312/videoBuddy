@@ -1,0 +1,81 @@
+# Kopiere diese Datei nach config.yaml und trage deine Werte ein.
+# config.yaml steht in .gitignore, falls du das Projekt in ein Repo packst -
+# darin stehen Dropbox-Zugangsdaten.
+
+# Sendernamen wie sie im EPG-Feed für "channel" auftauchen (Schlüssel) und
+# der Name des passenden Streams aus streams.py -> fetch_live_streams()
+# (Wert, muss exakt oder als Teilstring zum "Titel"-Feld aus live-streams.json
+# passen, z. B. "ARD Livestream", "ZDF Livestream", "ZDF.neo Livestream",
+# "WDR Livestream (Deutschland)", "BR Süd Livestream", "NDR Niedersachsen",
+# "MDR Sachsen Livestream", "SWR BW Livestream", "HR Livestream",
+# "RBB Berlin Livestream", "SR Livestream", "KiKA Livestream",
+# "PHOENIX Livestream", "ARTE.DE Livestream", "3Sat Livestream").
+#
+# TODO: linke Seite (EPG-Channel-ID) hängt von deiner gewählten EPG-Quelle ab
+# und muss einmal gegen echte Feed-Daten geprüft werden (siehe README, Punkt 1).
+channel_map:
+  "ard.de":        "ARD Livestream"
+  "zdf.de":        "ZDF Livestream"
+  "zdfneo.zdf.de":  "ZDF.neo Livestream"
+  "zdfinfo.zdf.de": "ZDF.info Livestream"
+  "wdr.de":        "WDR Livestream (Deutschland)"
+  "br.de":         "BR Süd Livestream"
+  "ndr.de":        "NDR Niedersachsen"
+  "mdr.de":        "MDR Sachsen Livestream"
+  "swr.de":        "SWR BW Livestream"
+  "hr.de":         "HR Livestream"
+  "rbb-online.de": "RBB Berlin Livestream"
+  "sr.de":         "SR Livestream"
+  "kika.de":       "KiKA Livestream"
+  "phoenix.de":    "PHOENIX Livestream"
+  "arte.tv":       "ARTE.DE Livestream"
+  "3sat.de":       "3Sat Livestream"
+
+# EPG-Quelle(n) im XMLTV-Format. Mehrere URLs werden zusammengeführt.
+# TODO: konkrete, funktionierende URL eintragen (siehe README, Punkt 1).
+epg_urls:
+  - "https://example.invalid/epg_de.xml"
+
+# Schlagworte, die eine Sendung als Spielfilm markieren (Kleinschreibung
+# egal, wird gegen category-Tags UND Titel geprüft). Nach den ersten echten
+# EPG-Daten nachschärfen.
+film_keywords:
+  - "Spielfilm"
+  - "Fernsehfilm"
+  - "Kinofilm"
+  - "TV-Movie"
+
+# Sendungen unter dieser Länge zählen nicht als Film (filtert z. B.
+# Kurzformate mit falsch gesetztem Genre-Tag heraus)
+min_duration_minutes: 70
+
+# Sicherheitspuffer: Aufnahme startet X Minuten vor und endet Y Minuten nach
+# der im EPG angegebenen Zeit, weil Sendungen gern überziehen
+buffer_before_minutes: 3
+buffer_after_minutes: 12
+
+# Wie lange nach Sendeende gewartet wird, bevor geprüft wird, ob der Film in
+# der Mediathek gelandet ist
+mediathek_check_delay_hours: 72
+mediathek_api_url: "https://mediathekviewweb.de/api/query"
+
+# Wie oft (Minuten) EPG neu geladen und der Aufnahmeplan aktualisiert wird
+epg_refresh_minutes: 360
+
+# Wie oft (Sekunden) die Job-Queue auf fällige Starts/Stopps geprüft wird
+poll_interval_seconds: 30
+
+# Lokales Zwischenlager, bevor eine Aufnahme hochgeladen oder verworfen wird
+recording_dir: "./data/recordings"
+state_file: "./data/jobs.json"
+
+dropbox:
+  # Dropbox-App unter https://www.dropbox.com/developers/apps anlegen
+  # (Scoped App, Berechtigung files.content.write), dann per OAuth-Flow
+  # einen Refresh Token erzeugen (siehe README der "dropbox"-Python-Lib).
+  refresh_token: "TODO"
+  app_key: "TODO"
+  app_secret: "TODO"
+  upload_folder: "/PVR-OeRR"
+
+log_level: "INFO"
