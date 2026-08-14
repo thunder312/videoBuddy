@@ -6,8 +6,16 @@ eine laufende Aufnahme einen Neustart des Scheduler-Prozesses - ffmpeg läuft
 dank start_new_session als eigene Session weiter, auch wenn entrypoint.sh dem
 Scheduler-Prozess SIGTERM schickt.
 
-Ausgabe-Container ist .mkv statt .mp4: "-c copy" von HLS (AAC in ADTS)
-funktioniert damit ohne den sonst nötigen aac_adtstoasc-Bitstream-Filter.
+Ausgabe-Container ist .ts (MPEG-TS), nicht .mkv oder .mp4: "-c copy" von HLS
+(AAC in ADTS) funktioniert damit ohne den sonst nötigen
+aac_adtstoasc-Bitstream-Filter - genau wie bei .mkv. Der Unterschied zu .mkv:
+.ts braucht keinen abschließenden Trailer/Index, um gültig zu sein. Wird der
+ffmpeg-Prozess mitten in der Aufnahme hart gekillt (z. B. weil der
+Docker-Container während einer laufenden Aufnahme neu gestartet wird - das
+killt trotz start_new_session den ganzen Prozessbaum im Container), bleibt
+eine .ts-Datei bis zum Abbruchpunkt gültig und abspielbar. Bei .mkv/.mp4 kann
+ein solcher harter Abbruch dagegen fast die komplette Aufnahme unbrauchbar
+machen, weil ohne sauberen Abschluss kein gültiger Index geschrieben wird.
 """
 
 from __future__ import annotations
@@ -30,7 +38,7 @@ def build_output_path(
     os.makedirs(recording_dir, exist_ok=True)
     filename = (
         f"{_sanitize(channel)}_{record_start.strftime('%Y%m%d-%H%M')}_"
-        f"{_sanitize(title)}.mkv"
+        f"{_sanitize(title)}.ts"
     )
     return os.path.join(recording_dir, filename)
 
