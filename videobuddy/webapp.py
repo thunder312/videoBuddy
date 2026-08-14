@@ -5,6 +5,7 @@ Einstellungen. Bewusst ohne Login (siehe README "Sicherheitshinweis")."""
 from __future__ import annotations
 
 import os
+import re
 import secrets
 import time
 from datetime import datetime
@@ -18,6 +19,7 @@ from .config import Config, load_config
 from .settings import load_settings, save_settings
 
 BERLIN = ZoneInfo("Europe/Berlin")
+WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 
 STATUS_LABELS = {
     "scheduled": "geplant",
@@ -39,8 +41,42 @@ def _local_time(value) -> str:
     return value.astimezone(BERLIN).strftime("%d.%m.%Y %H:%M")
 
 
+def _time_only(value) -> str:
+    if value is None:
+        return "-"
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value)
+    return value.astimezone(BERLIN).strftime("%H:%M")
+
+
 def _status_label(status: str) -> str:
     return STATUS_LABELS.get(status, status)
+
+
+def _date_label(d) -> str:
+    return f"{WEEKDAYS[d.weekday()]}, {d.strftime('%d.%m.%Y')}"
+
+
+def _channel_name(stream_title: str) -> str:
+    """Zeigt Sendernamen ohne den "Livestream"-Zusatz aus streams.py an.
+    Nur fürs Anzeigen - config.channel_map selbst bleibt unverändert, weil
+    main.py den exakten Wert für die Stream-URL-Zuordnung braucht."""
+    return re.sub(r"\s+", " ", stream_title.replace("Livestream", "")).strip()
+
+
+def _build_table_rows(candidates, show_day_separators: bool) -> list[dict]:
+    """Baut die Zeilenliste für die Sendungen-Tabelle. Bei "Alle Tage" wird
+    vor der ersten Sendung eines neuen Kalendertags ein Trenner eingefügt -
+    candidates ist bereits nach Startzeit sortiert (siehe candidates.py)."""
+    rows: list[dict] = []
+    last_date = None
+    for c in candidates:
+        local_date = c.start.astimezone(BERLIN).date()
+        if show_day_separators and local_date != last_date:
+            rows.append({"type": "separator", "label": _date_label(local_date)})
+            last_date = local_date
+        rows.append({"type": "candidate", "candidate": c})
+    return rows
 
 
 def create_app(config: Config | None = None) -> Flask:
@@ -48,7 +84,9 @@ def create_app(config: Config | None = None) -> Flask:
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
     app.jinja_env.filters["local_time"] = _local_time
+    app.jinja_env.filters["time_only"] = _time_only
     app.jinja_env.filters["status_label"] = _status_label
+    app.jinja_env.filters["channel_name"] = _channel_name
 
     epg_cache: dict[str, object] = {"entries": [], "fetched_at": 0.0}
 
@@ -86,12 +124,47 @@ def create_app(config: Config | None = None) -> Flask:
     def sendungen():
         settings_data = load_settings(config)
         only_suggestions = request.args.get("nur_vorschlaege") == "1"
+        selected_date = request.args.get("datum") or ""
+        selected_channel = request.args.get("sender") or ""
+
         entries = get_epg_entries()
         candidates = build_candidates(entries, settings_data)
         if only_suggestions:
             candidates = [c for c in candidates if c.is_suggestion]
+
+        available_dates = sorted(
+            {c.start.astimezone(BERLIN).date() for c in candidates}
+        )
+        date_options = [
+            {"value": d.isoformat(), "label": _date_label(d)} for d in available_dates
+        ]
+
+        if selected_date:
+            candidates = [
+                c
+                for c in candidates
+                if c.start.astimezone(BERLIN).date().isoformat() == selected_date
+            ]
+        if selected_channel:
+            candidates = [c for c in candidates if c.channel == selected_channel]
+
+        channel_options = {
+            channel_id: config.channel_map[channel_id]
+            for channel_id in settings_data["watched_channels"]
+            if channel_id in config.channel_map
+        }
+
+        table_rows = _build_table_rows(candidates, show_day_separators=not selected_date)
+
         return render_template(
-            "sendungen.html", candidates=candidates, only_suggestions=only_suggestions
+            "sendungen.html",
+            candidates=candidates,
+            table_rows=table_rows,
+            only_suggestions=only_suggestions,
+            date_options=date_options,
+            selected_date=selected_date,
+            channel_options=channel_options,
+            selected_channel=selected_channel,
         )
 
     @app.route("/sendungen/aufnehmen", methods=["POST"])
@@ -112,6 +185,8 @@ def create_app(config: Config | None = None) -> Flask:
             url_for(
                 "sendungen",
                 nur_vorschlaege=request.form.get("nur_vorschlaege") or None,
+                datum=request.form.get("datum") or None,
+                sender=request.form.get("sender_filter") or None,
             )
         )
 

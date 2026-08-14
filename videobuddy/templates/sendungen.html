@@ -2,51 +2,82 @@
 {% block title %}Sendungen wählen - videoBuddy{% endblock %}
 {% block content %}
   <h1>Sendungen wählen</h1>
+
+  <form method="get" class="filters">
+    <label>
+      Datum
+      <select name="datum" onchange="this.form.submit()">
+        <option value="">Alle Tage</option>
+        {% for opt in date_options %}
+          <option value="{{ opt.value }}" {% if opt.value == selected_date %}selected{% endif %}>{{ opt.label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Sender
+      <select name="sender" onchange="this.form.submit()">
+        <option value="">Alle Sender</option>
+        {% for channel_id, stream_title in channel_options.items() %}
+          <option value="{{ channel_id }}" {% if channel_id == selected_channel %}selected{% endif %}>{{ stream_title | channel_name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="checkbox-inline">
+      <input type="checkbox" name="nur_vorschlaege" value="1" {% if only_suggestions %}checked{% endif %} onchange="this.form.submit()">
+      Nur Vorschläge zeigen
+    </label>
+    <noscript><button type="submit">Filtern</button></noscript>
+  </form>
+
   <div class="toolbar">
-    {% if only_suggestions %}
-      <a href="{{ url_for('sendungen') }}">Alle Sendungen zeigen</a>
-    {% else %}
-      <a href="{{ url_for('sendungen', nur_vorschlaege='1') }}">Nur Vorschläge zeigen</a>
-    {% endif %}
     <form method="post" action="{{ url_for('alle_uebernehmen') }}">
       <button type="submit">Alle Vorschläge übernehmen</button>
     </form>
   </div>
 
   {% if not candidates %}
-    <p>Keine {{ "Vorschläge" if only_suggestions else "Sendungen" }} im EPG-Zeitraum gefunden.</p>
+    <p>Keine {{ "Vorschläge" if only_suggestions else "Sendungen" }} für diese Filter gefunden.</p>
   {% else %}
     <table>
       <thead>
         <tr>
+          <th>Start</th>
           <th>Sender</th>
           <th>Titel</th>
-          <th>Sendezeit</th>
+          <th>Ende</th>
           <th>Dauer</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
-        {% for c in candidates %}
-          <tr class="{{ 'suggestion' if c.is_suggestion else '' }}">
-            <td>{{ c.channel }}</td>
-            <td>
-              {% if c.is_suggestion %}<span class="badge badge-suggestion">Vorschlag</span>{% endif %}
-              {{ c.title }}
-            </td>
-            <td>{{ c.start | local_time }} - {{ c.stop | local_time }}</td>
-            <td>{{ c.duration_minutes | round | int }} min</td>
-            <td>
-              <form method="post" action="{{ url_for('aufnehmen') }}">
-                <input type="hidden" name="channel" value="{{ c.channel }}">
-                <input type="hidden" name="title" value="{{ c.title }}">
-                <input type="hidden" name="epg_start" value="{{ c.start.isoformat() }}">
-                <input type="hidden" name="epg_end" value="{{ c.stop.isoformat() }}">
-                <input type="hidden" name="nur_vorschlaege" value="{{ '1' if only_suggestions else '' }}">
-                <button type="submit">Aufnehmen</button>
-              </form>
-            </td>
-          </tr>
+        {% for row in table_rows %}
+          {% if row.type == "separator" %}
+            <tr class="day-separator"><td colspan="6">{{ row.label }}</td></tr>
+          {% else %}
+            {% set c = row.candidate %}
+            <tr class="{{ 'suggestion' if c.is_suggestion else '' }}">
+              <td>{{ c.start | time_only }}</td>
+              <td>{{ channel_options.get(c.channel, c.channel) | channel_name }}</td>
+              <td>
+                {% if c.is_suggestion %}<span class="badge badge-suggestion">Vorschlag</span>{% endif %}
+                {{ c.title }}
+              </td>
+              <td>{{ c.stop | time_only }}</td>
+              <td>{{ c.duration_minutes | round | int }} min</td>
+              <td>
+                <form method="post" action="{{ url_for('aufnehmen') }}">
+                  <input type="hidden" name="channel" value="{{ c.channel }}">
+                  <input type="hidden" name="title" value="{{ c.title }}">
+                  <input type="hidden" name="epg_start" value="{{ c.start.isoformat() }}">
+                  <input type="hidden" name="epg_end" value="{{ c.stop.isoformat() }}">
+                  <input type="hidden" name="nur_vorschlaege" value="{{ '1' if only_suggestions else '' }}">
+                  <input type="hidden" name="datum" value="{{ selected_date }}">
+                  <input type="hidden" name="sender_filter" value="{{ selected_channel }}">
+                  <button type="submit">Aufnehmen</button>
+                </form>
+              </td>
+            </tr>
+          {% endif %}
         {% endfor %}
       </tbody>
     </table>

@@ -9,7 +9,7 @@
         <label class="checkbox">
           <input type="checkbox" name="watched_channels" value="{{ channel_id }}"
             {% if channel_id in settings.watched_channels %}checked{% endif %}>
-          {{ stream_title }} ({{ channel_id }})
+          {{ stream_title | channel_name }} ({{ channel_id }})
         </label>
       {% endfor %}
     </fieldset>
