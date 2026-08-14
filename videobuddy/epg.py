@@ -5,11 +5,14 @@ config.yaml (epg_urls) und noch nicht Teil dieses Codes."""
 
 from __future__ import annotations
 
+import gzip
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 import requests
+
+GZIP_MAGIC = b"\x1f\x8b"
 
 
 @dataclass
@@ -43,7 +46,18 @@ def _parse_xmltv_time(raw: str) -> datetime:
     return dt.replace(tzinfo=tz).astimezone(timezone.utc)
 
 
+def _decompress_if_gzip(content: bytes) -> bytes:
+    """Manche kostenlosen XMLTV-Quellen (z. B. epgshare01.online) liefern
+    .xml.gz ohne passenden Content-Encoding-Header - requests entpackt das
+    dann NICHT automatisch. Magic-Bytes-Check statt URL-Endung, damit es
+    unabhängig davon funktioniert, ob ein Server doch korrekt komprimiert."""
+    if content[:2] == GZIP_MAGIC:
+        return gzip.decompress(content)
+    return content
+
+
 def parse_xmltv(xml_bytes: bytes) -> list[EpgEntry]:
+    xml_bytes = _decompress_if_gzip(xml_bytes)
     root = ET.fromstring(xml_bytes)
     entries: list[EpgEntry] = []
 

@@ -1,3 +1,4 @@
+import gzip
 import os
 from datetime import datetime, timezone
 
@@ -39,3 +40,16 @@ def test_parse_xmltv_categories_and_channel():
     assert tatort.channel == "ard.de"
     assert tatort.categories == ["Krimi"]
     assert tatort.description == "Ein Krimi."
+
+
+def test_parse_xmltv_transparently_decompresses_gzip():
+    """Manche kostenlosen XMLTV-Quellen (z. B. epgshare01.online) liefern
+    nur .xml.gz ohne Content-Encoding-Header - requests entpackt das nicht
+    automatisch, parse_xmltv muss es also selbst erkennen und entpacken."""
+    with open(FIXTURE_PATH, "rb") as fh:
+        raw = fh.read()
+    compressed = gzip.compress(raw)
+
+    entries = parse_xmltv(compressed)
+
+    assert [e.title for e in entries] == ["Tatort", "Der Blaue Planet", "Tagesschau"]

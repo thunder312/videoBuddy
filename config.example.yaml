@@ -11,39 +11,51 @@
 # "RBB Berlin Livestream", "SR Livestream", "KiKA Livestream",
 # "PHOENIX Livestream", "ARTE.DE Livestream", "3Sat Livestream").
 #
-# TODO: linke Seite (EPG-Channel-ID) hängt von deiner gewählten EPG-Quelle ab
-# und muss einmal gegen echte Feed-Daten geprüft werden (siehe README, Punkt 1).
+# Linke Seite (EPG-Channel-ID) gegen die unten stehende epg_urls-Quelle
+# (epgshare01.online, Stand 2026-08-14) verifiziert. Nutzt du eine andere
+# EPG-Quelle, ändern sich diese IDs (siehe README, Punkt 1) - z. B. nutzt
+# epgshare01 einen gemeinsamen Feed "SWR/SR.de" für SWR und SR, ein eigener
+# "sr.de"-Eintrag entfällt dadurch.
 channel_map:
-  "ard.de":        "ARD Livestream"
-  "zdf.de":        "ZDF Livestream"
-  "zdfneo.zdf.de":  "ZDF.neo Livestream"
-  "zdfinfo.zdf.de": "ZDF.info Livestream"
-  "wdr.de":        "WDR Livestream (Deutschland)"
-  "br.de":         "BR Süd Livestream"
-  "ndr.de":        "NDR Niedersachsen"
-  "mdr.de":        "MDR Sachsen Livestream"
-  "swr.de":        "SWR BW Livestream"
-  "hr.de":         "HR Livestream"
-  "rbb-online.de": "RBB Berlin Livestream"
-  "sr.de":         "SR Livestream"
-  "kika.de":       "KiKA Livestream"
-  "phoenix.de":    "PHOENIX Livestream"
-  "arte.tv":       "ARTE.DE Livestream"
-  "3sat.de":       "3Sat Livestream"
+  "Das.Erste.de": "ARD Livestream"
+  "ZDF.de":       "ZDF Livestream"
+  "ZDFneo.de":    "ZDF.neo Livestream"
+  "ZDFinfo.de":   "ZDF.info Livestream"
+  "WDR.de":       "WDR Livestream (Deutschland)"
+  "BR.de":        "BR Süd Livestream"
+  "NDR.de":       "NDR Niedersachsen"
+  "MDR.de":       "MDR Sachsen Livestream"
+  "SWR/SR.de":    "SWR BW Livestream"
+  "HR.de":        "HR Livestream"
+  "RBB.de":       "RBB Berlin Livestream"
+  "KIKA.de":      "KiKA Livestream"
+  "PHOENIX.de":   "PHOENIX Livestream"
+  "ARTE.de":      "ARTE.DE Livestream"
+  "3sat.de":      "3Sat Livestream"
 
 # EPG-Quelle(n) im XMLTV-Format. Mehrere URLs werden zusammengeführt.
-# TODO: konkrete, funktionierende URL eintragen (siehe README, Punkt 1).
+# epgshare01.online: kostenloser, community-betriebener XMLTV-Aggregator,
+# deckt ARD/ZDF/Dritte/3sat/arte/phoenix/KiKA ab (live gegen echte Daten
+# geprüft, siehe README "Was schon getestet ist"). Liefert nur .xml.gz
+# (ohne Content-Encoding-Header) - epg.py entpackt das automatisch.
 epg_urls:
-  - "https://example.invalid/epg_de.xml"
+  - "https://epgshare01.online/epgshare01/epg_ripper_DE1.xml.gz"
 
 # Schlagworte, die eine Sendung als Spielfilm markieren (Kleinschreibung
-# egal, wird gegen category-Tags UND Titel geprüft). Nach den ersten echten
-# EPG-Daten nachschärfen.
+# egal, wird gegen category-Tags UND Titel geprüft). Die generische
+# "Spielfilm"/"Fernsehfilm"-Kategorie gibt es bei epgshare01 NICHT - die
+# Quelle nutzt stattdessen sehr granulare zusammengesetzte Genre-Tags
+# (z. B. "Actionfilm", "Krimidrama", "Liebeskomödie", "Historiendrama").
+# Diese Stämme fangen die meisten davon per Teilstring ab. Nebenwirkung:
+# auch (Krimi-)Serien mit solchen Tags werden als Vorschlag markiert -
+# in der Praxis meist unproblematisch (min_duration_minutes filtert kurze
+# Folgen raus), sonst über "Einstellungen" weiter nachschärfen.
 film_keywords:
-  - "Spielfilm"
-  - "Fernsehfilm"
-  - "Kinofilm"
-  - "TV-Movie"
+  - "film"
+  - "drama"
+  - "komödie"
+  - "krimi"
+  - "thriller"
 
 # Sendungen unter dieser Länge zählen nicht als Film (filtert z. B.
 # Kurzformate mit falsch gesetztem Genre-Tag heraus)

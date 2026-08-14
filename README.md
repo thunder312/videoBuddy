@@ -7,9 +7,10 @@ der Mediathek verfügbar ist, und lädt ihn nur dann zu Dropbox hoch, wenn das
 **nicht** der Fall ist.
 
 Der komplette Code (Scheduler-Loop, Weboberfläche, alle Module aus dem
-Architekturdiagramm) ist implementiert und getestet, siehe „Was schon
-getestet ist" unten. Zwei Stellen brauchen vor dem produktiven Einsatz noch
-deine Handarbeit — siehe „Offene Punkte" unten.
+Architekturdiagramm) ist implementiert und getestet, `config.yaml` ist mit
+einer echten, funktionierenden EPG-Quelle ausgefüllt — siehe „Was schon
+getestet ist" unten. Ein paar Stellen brauchen vor dem produktiven Einsatz
+noch deine Handarbeit — siehe „Offene Punkte" unten.
 
 ## Architektur
 
@@ -123,31 +124,34 @@ journalctl -u videobuddy -u videobuddy-web -f
 
 ## Offene Punkte, bevor das produktiv laufen sollte
 
-1. **EPG-Quelle festlegen und `channel_map` bauen.** `epg.py` versteht das
-   XMLTV-Standardformat und funktioniert grundsätzlich mit jeder passenden
-   Quelle (z. B. free-epg.de, epg-plus.com, oder ein dedizierter ARD-Scraper
-   wie https://projects.webvoss.de/2019/04/14/legal-epg-scraper-for-ard-tv-stations-to-use-with-tvheadend-external-xmltv-grabber/).
-   Ich konnte in dieser Sitzung keine konkrete, aktuell funktionierende
-   XMLTV-URL verifizieren — das musst du einmal ausprobieren und die
-   `channel`-IDs aus dem Feed in `config.yaml` unter `channel_map` den
-   Sendernamen aus `streams.py` zuordnen (die IDs unterscheiden sich von
-   Quelle zu Quelle, z. B. `daserste.de` vs. `ard.de`).
-2. **`film_keywords` nachschärfen.** Über „Einstellungen" in der
-   Weboberfläche jederzeit ohne Neustart änderbar — nach den ersten echten
-   EPG-Daten einmal durchsehen, welche Genre-Tags die Sender tatsächlich
-   benutzen.
-3. **Dockerfile/entrypoint.sh sind nicht in einer echten Docker-Umgebung
-   gebaut/getestet worden** (in dieser Sitzung stand kein Docker-Daemon zur
-   Verfügung). Die Python-Logik dahinter (State-Store, Scheduler, Webapp-
-   Routen) ist getestet, aber `docker compose up --build` einmal selbst
-   durchlaufen lassen und die Logs prüfen, bevor du dich darauf verlässt.
-4. **`recorder.py` (ffmpeg) und `dropbox_upload.py` nicht live getestet.**
+1. **Dockerfile/entrypoint.sh sind nicht in einer echten Docker-Umgebung
+   gebaut/getestet worden** (auf keiner der Maschinen, auf denen dieses
+   Projekt bisher bearbeitet wurde, stand ein Docker-Daemon zur Verfügung —
+   auch kein WSL als Ausweichmöglichkeit). Die Python-Logik dahinter
+   (State-Store, Scheduler, Webapp-Routen, EPG-Parsing) ist getestet, aber
+   `docker compose up --build` einmal selbst durchlaufen lassen und die
+   Logs prüfen, bevor du dich darauf verlässt. Ersatzweise wurde der
+   `pip install -r requirements.txt`-Schritt aus dem Dockerfile isoliert in
+   einer frischen venv nachgestellt (installiert sauber) und
+   `entrypoint.sh` auf Shell-Syntaxfehler geprüft (`sh -n entrypoint.sh`,
+   OK).
+2. **`recorder.py` (ffmpeg) und `dropbox_upload.py` nicht live getestet.**
    Beides braucht einen echten HLS-Stream bzw. einen echten Dropbox-Account
    mit gültigem Refresh-Token — nicht Teil dieser Sitzung. Vor dem
    produktiven Einsatz einmal eine kurze Testaufnahme über die
    Weboberfläche anstoßen und den kompletten Ablauf bis zum Dropbox-Upload
    (oder Verwerfen, falls in der Mediathek gefunden) beobachten
    (`journalctl -u videobuddy -f` bzw. `docker compose logs -f`).
+3. **Dropbox-Zugangsdaten in `config.yaml` sind noch Platzhalter.**
+   `refresh_token`/`app_key`/`app_secret` müssen aus deinem eigenen
+   Dropbox-Account stammen (siehe Kommentar in `config.example.yaml`) —
+   das kann niemand für dich vorausfüllen.
+4. **`film_keywords` ggf. weiter nachschärfen.** Die aktuellen Defaults
+   (`film`, `drama`, `komödie`, `krimi`, `thriller`) sind gegen echte
+   Kategorie-Tags der `epg_urls`-Quelle unten geprüft und treffen bewusst
+   eher zu viel als zu wenig — z. B. werden auch Krimi-Serienfolgen mit
+   ≥70 Minuten Länge als „Vorschlag" markiert. Über „Einstellungen" in der
+   Weboberfläche jederzeit ohne Neustart anpassbar.
 
 ## Was schon getestet ist (und wie)
 
@@ -165,6 +169,18 @@ journalctl -u videobuddy -u videobuddy-web -f
   aktuelle Treffer). Anfrage-/Antwortformat sind damit bestätigt richtig.
 - **`epg.py`**: XMLTV-Parsing, Zeitzonenumrechnung und Spielfilm-Erkennung
   gegen eine handgebaute Beispieldatei verifiziert (`tests/test_epg.py`).
+  Zusätzlich live gegen die echte, aktuelle `epg_urls`-Quelle
+  (`epgshare01.online/epgshare01/epg_ripper_DE1.xml.gz`, Stand 2026-08-14)
+  getestet: 26.635 Sendungen über alle Sender geladen, alle 15
+  `channel_map`-Einträge aus `config.example.yaml` lösen zu echten
+  EPG-Channel-IDs auf (z. B. ARD → `Das.Erste.de`, 136 Sendungen im
+  geladenen Zeitraum). Diese Quelle liefert nur `.xml.gz` ohne
+  `Content-Encoding`-Header — `epg.py` erkennt und entpackt das jetzt
+  automatisch (Magic-Bytes-Check, `tests/test_epg.py`). `film_keywords`
+  wurden anhand der echten (sehr granularen, zusammengesetzten)
+  Genre-Tags dieser Quelle neu kalibriert — die alten Default-Werte
+  („Spielfilm" etc.) kamen in den echten Daten kein einziges Mal vor und
+  hätten nie einen Vorschlag erzeugt.
 - **`state.py`**: `JsonFileStore.modify()` unter 20 parallelen Threads
   race-frei getestet (Stellvertreter für die zwei echten Prozesse
   Scheduler + Webserver), inklusive plattformübergreifendem Datei-Lock
@@ -180,12 +196,16 @@ journalctl -u videobuddy -u videobuddy-web -f
   Testclient mit gemockten EPG-Kandidaten) manuell end-to-end gegen den
   laufenden `flask run`-Dev-Server durchgespielt: Aufnahme über
   „Sendungen wählen" anlegen, im Dashboard sehen, stornieren, Einstellungen
-  speichern und persistiert in `data/settings.json` wiederfinden.
+  speichern und persistiert in `data/settings.json` wiederfinden. Zusätzlich
+  einmal komplett mit der echten, ausgefüllten `config.yaml` (echte
+  EPG-Quelle, echte `channel_map`) durchlaufen: `/sendungen` zeigte reale,
+  aktuelle Sendungen mit plausiblen Spielfilm-Vorschlägen (z. B. „Der
+  talentierte Mr. Ripley", „Papillon") aus allen 15 beobachteten Sendern.
 - **Nicht getestet** (siehe „Offene Punkte"): `recorder.py` gegen einen
   echten Stream, `dropbox_upload.py` gegen einen echten Account, und der
-  komplette Docker-Build.
+  komplette Docker-Build (kein Docker-Daemon in dieser Umgebung verfügbar).
 
-Insgesamt 31 automatisierte Tests, ausführbar mit:
+Insgesamt 32 automatisierte Tests, ausführbar mit:
 
 ```bash
 pip install -r requirements-dev.txt
