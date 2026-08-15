@@ -38,8 +38,8 @@ def test_dashboard_empty(client):
 
 
 def test_dashboard_shows_compact_time_range_even_across_midnight(client):
-    """Sendezeit zeigt das Datum nur einmal, auch wenn die Sendung ueber
-    Mitternacht laeuft - Format "TT.MM.JJJJ - HH:MM - HH:MM"."""
+    """Sendezeit zeigt das Datum nur einmal (erste Zeile), Uhrzeiten in der
+    zweiten Zeile - auch wenn die Sendung ueber Mitternacht laeuft."""
     from videobuddy import scheduler
 
     config = client.app_config
@@ -50,7 +50,7 @@ def test_dashboard_shows_compact_time_range_even_across_midnight(client):
     body = client.get("/").get_data(as_text=True)
     # Nur das Start-Datum (15.08.), obwohl die Sendung nach Berliner Zeit
     # erst am 16.08. endet.
-    assert "15.08.2026 - 23:00 - 01:00" in body
+    assert "15.08.2026<br>23:00 - 01:00" in body
 
 
 def test_sendungen_shows_suggestion(client):

@@ -22,7 +22,6 @@
   --danger: #c93a4e;
   --danger-dark: #a92e40;
   --success: #2e7d32;
-  --warning: #b26a00;
   --live: #f0495a;
 }
 
@@ -185,8 +184,9 @@ tr.day-separator:hover td {
 }
 
 .badge-ready {
-  background: var(--warning);
-  color: white;
+  background: var(--surface);
+  border: 1px solid var(--success);
+  color: var(--success);
 }
 
 .badge-uploading {

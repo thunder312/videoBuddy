@@ -77,7 +77,7 @@
           <tr class="status-{{ job.status }}">
             <td data-label="Sender">{{ channel_map.get(job.channel, job.channel) | channel_name }}</td>
             <td data-label="Titel">{{ job.title }}</td>
-            <td data-label="Sendezeit">{{ job.epg_start | time_range(job.epg_end) }}</td>
+            <td data-label="Sendezeit">{{ job.epg_start | date_only }}<br>{{ job.epg_start | time_only }} - {{ job.epg_end | time_only }}</td>
             <td data-label="Größe">
               {% if job.file_size %}
                 {{ job.file_size | filesizeformat }}

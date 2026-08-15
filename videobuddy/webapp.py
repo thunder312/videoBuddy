@@ -91,21 +91,12 @@ def _time_only(value) -> str:
     return value.astimezone(BERLIN).strftime("%H:%M")
 
 
-def _time_range_label(start, end) -> str:
-    """Kompakte Sendezeit fuers Dashboard - Datum nur einmal, auch wenn die
-    Sendung ueber Mitternacht laeuft (Start-Datum reicht als Orientierung)."""
-    if start is None or end is None:
+def _date_only(value) -> str:
+    if value is None:
         return "-"
-    if isinstance(start, str):
-        start = datetime.fromisoformat(start)
-    if isinstance(end, str):
-        end = datetime.fromisoformat(end)
-    start_local = start.astimezone(BERLIN)
-    end_local = end.astimezone(BERLIN)
-    return (
-        f"{start_local.strftime('%d.%m.%Y')} - "
-        f"{start_local.strftime('%H:%M')} - {end_local.strftime('%H:%M')}"
-    )
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value)
+    return value.astimezone(BERLIN).strftime("%d.%m.%Y")
 
 
 def _status_icon(status: str) -> str:
@@ -225,7 +216,7 @@ def create_app(config: Config | None = None) -> Flask:
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
     app.jinja_env.filters["local_time"] = _local_time
     app.jinja_env.filters["time_only"] = _time_only
-    app.jinja_env.filters["time_range"] = _time_range_label
+    app.jinja_env.filters["date_only"] = _date_only
     app.jinja_env.filters["status_label"] = _status_label
     app.jinja_env.filters["status_icon"] = _status_icon
     app.jinja_env.filters["channel_name"] = _channel_name
