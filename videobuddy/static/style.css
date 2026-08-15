@@ -303,6 +303,31 @@ button.danger:hover {
   gap: 0.5rem;
 }
 
+/* Sendungen-Titel mit EPG-Beschreibung: natives <details> statt Mouseover-
+   Tooltip, damit es auf dem Handy per Tap genauso funktioniert wie am
+   Desktop per Klick - kein JavaScript noetig. */
+.plot summary {
+  display: inline;
+  cursor: pointer;
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+.plot summary::-webkit-details-marker {
+  display: none;
+}
+
+.plot summary::marker {
+  content: "";
+}
+
+.plot p {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 fieldset {
   margin-bottom: 1.25rem;
   padding: 1rem;

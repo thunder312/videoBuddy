@@ -60,7 +60,14 @@
               <td data-label="Sender">{{ channel_options.get(c.channel, c.channel) | channel_name }}</td>
               <td data-label="Titel">
                 {% if c.is_suggestion %}<span class="badge badge-suggestion">Vorschlag</span>{% endif %}
-                {{ c.title }}
+                {% if c.description %}
+                  <details class="plot">
+                    <summary>{{ c.title }}</summary>
+                    <p>{{ c.description }}</p>
+                  </details>
+                {% else %}
+                  {{ c.title }}
+                {% endif %}
               </td>
               <td data-label="Ende">{{ c.stop | time_only }}</td>
               <td data-label="Dauer">{{ c.duration_minutes | round | int }} min</td>

@@ -62,6 +62,36 @@ def test_sendungen_shows_suggestion(client):
     assert "Vorschlag" in body
 
 
+def test_sendungen_titel_expands_epg_description(client, monkeypatch):
+    """Der Titel wird zu einem <details>/<summary> statt einem Mouseover-
+    Tooltip verpackt, wenn der EPG-Feed eine Beschreibung liefert - das
+    funktioniert per Tap genauso wie per Klick, ganz ohne JavaScript."""
+    future_start = datetime.now(timezone.utc) + timedelta(hours=2)
+    entries = [
+        EpgEntry(
+            channel="ard.de",
+            title="Der talentierte Mr. Ripley",
+            start=future_start,
+            stop=future_start + timedelta(minutes=90),
+            categories=["Spielfilm"],
+            description="Ein Hochstapler gibt sich als reicher Erbe aus.",
+        )
+    ]
+    monkeypatch.setattr(epg, "fetch_epg", lambda urls: entries)
+
+    body = client.get("/sendungen").get_data(as_text=True)
+
+    assert "<summary>Der talentierte Mr. Ripley</summary>" in body
+    assert "Ein Hochstapler gibt sich als reicher Erbe aus." in body
+
+
+def test_sendungen_titel_plain_without_epg_description(client):
+    # Der Fixture-Eintrag hat description="" - siehe client-Fixture oben.
+    body = client.get("/sendungen").get_data(as_text=True)
+    assert "<summary>" not in body
+    assert "Der Blaue Planet" in body
+
+
 def test_aufnehmen_then_dashboard_shows_job(client):
     future_start = datetime.now(timezone.utc) + timedelta(hours=2)
     future_end = future_start + timedelta(minutes=90)

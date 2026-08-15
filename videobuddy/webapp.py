@@ -225,7 +225,13 @@ def create_app(config: Config | None = None) -> Flask:
     app.jinja_env.filters["channel_name"] = _channel_name
     app.jinja_env.filters["duration"] = _duration_label
 
-    epg_cache: dict[str, object] = {"entries": [], "fetched_at": 0.0}
+    # fetched_at startet bei -inf statt 0.0: time.monotonic() misst Zeit seit
+    # irgendeinem beliebigen Bezugspunkt (unter Linux typischerweise seit
+    # Systemstart, NICHT seit der Unix-Epoche) - mit 0.0 als Startwert würde
+    # der allererste Abruf faelschlich als "noch frisch" gelten, solange die
+    # System-Uptime kleiner als epg_refresh_minutes ist (z. B. kurz nach
+    # einem Neustart), und "Sendungen wählen" bliebe dauerhaft leer.
+    epg_cache: dict[str, object] = {"entries": [], "fetched_at": float("-inf")}
 
     def get_epg_entries():
         now = time.monotonic()
