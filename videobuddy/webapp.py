@@ -315,18 +315,28 @@ def create_app(config: Config | None = None) -> Flask:
     @app.route("/jobs/<job_id>/direkt")
     def direkt(job_id):
         job = scheduler.get_job(config, job_id)
+        # Absolut machen, bevor os.path.exists/send_file ihn sehen: ein
+        # relativer file_path (config.recording_dir z.B. "./recordings")
+        # ist zwar korrekt relativ zum Arbeitsverzeichnis (/app) - aber
+        # Flasks send_file() loest relative Pfade stattdessen gegen
+        # current_app.root_path auf (das videobuddy-Paketverzeichnis,
+        # /app/videobuddy), nicht gegen das Arbeitsverzeichnis. Ohne
+        # os.path.abspath() sucht send_file() also am falschen Ort
+        # (/app/videobuddy/recordings/... statt /app/recordings/...) und
+        # wirft FileNotFoundError, obwohl die Datei existiert.
+        file_path = os.path.abspath(job["file_path"]) if job and job.get("file_path") else None
         if (
             job is None
             or job["status"] not in FILE_ACTION_STATUSES
-            or not job.get("file_path")
-            or not os.path.exists(job["file_path"])
+            or not file_path
+            or not os.path.exists(file_path)
         ):
             flash("Datei nicht (mehr) verfügbar.", "error")
             return _dashboard_redirect()
         return send_file(
-            job["file_path"],
+            file_path,
             as_attachment=True,
-            download_name=os.path.basename(job["file_path"]),
+            download_name=os.path.basename(file_path),
         )
 
     @app.route("/jobs/<job_id>/delete", methods=["POST"])

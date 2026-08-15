@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -418,6 +419,47 @@ def test_direkt_route_streams_file_as_attachment(client, tmp_path):
     assert response.headers["Content-Disposition"].startswith("attachment")
     assert "recording.ts" in response.headers["Content-Disposition"]
     assert response.get_data() == b"fake video content"
+
+
+def test_direkt_route_resolves_relative_file_path_against_cwd(client):
+    """Regression: mit einem relativen file_path (config.recording_dir z.B.
+    "./recordings") loeste Flasks send_file() den Pfad faelschlich gegen
+    current_app.root_path (das videobuddy-Paketverzeichnis) statt gegen das
+    Arbeitsverzeichnis auf und warf FileNotFoundError - obwohl
+    os.path.exists() denselben Pfad zuvor noch als vorhanden gemeldet
+    hatte, weil os.path.exists() (anders als send_file) korrekt gegen das
+    Arbeitsverzeichnis aufloest. Live auf Athene aufgetreten.
+
+    Der Temp-Ordner wird bewusst direkt unters aktuelle Arbeitsverzeichnis
+    gelegt (statt der tmp_path-Fixture) - nur so laesst sich ueberhaupt ein
+    relativer Pfad dazu bilden (tmp_path kann auf einem anderen Laufwerk
+    liegen als das Repo, das schlaegt unter Windows sonst mit
+    "path is on mount ..." fehl)."""
+    import shutil
+    import tempfile
+
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+
+    tmp_dir = tempfile.mkdtemp(dir=os.getcwd())
+    try:
+        file_path = os.path.join(tmp_dir, "recording.ts")
+        with open(file_path, "wb") as fh:
+            fh.write(b"fake video content")
+        relative_path = os.path.relpath(file_path, start=os.getcwd())
+        scheduler.update_job(config, job["id"], status="ready", file_path=relative_path)
+
+        response = client.get(f"/jobs/{job['id']}/direkt")
+
+        assert response.status_code == 200
+        assert response.get_data() == b"fake video content"
+        response.close()
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def test_direkt_route_rejected_for_scheduled_job(client):
