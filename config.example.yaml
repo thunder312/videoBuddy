@@ -9,13 +9,23 @@
 # "WDR Livestream (Deutschland)", "BR Süd Livestream", "NDR Niedersachsen",
 # "MDR Sachsen Livestream", "SWR BW Livestream", "HR Livestream",
 # "RBB Berlin Livestream", "SR Livestream", "KiKA Livestream",
-# "PHOENIX Livestream", "ARTE.DE Livestream", "3Sat Livestream").
+# "PHOENIX Livestream", "ARTE.DE Livestream", "3Sat Livestream",
+# "ARD Alpha Livestream", "ARD Tagesschau Livestream", "ORF-1 Livestream",
+# "ORF-2 Livestream", "ORF-3 Livestream", "ORF-Sport Livestream").
 #
 # Linke Seite (EPG-Channel-ID) gegen die unten stehende epg_urls-Quelle
-# (epgshare01.online, Stand 2026-08-14) verifiziert. Nutzt du eine andere
+# (epgshare01.online, Stand 2026-08-15) verifiziert. Nutzt du eine andere
 # EPG-Quelle, ändern sich diese IDs (siehe README, Punkt 1) - z. B. nutzt
 # epgshare01 einen gemeinsamen Feed "SWR/SR.de" für SWR und SR, ein eigener
-# "sr.de"-Eintrag entfällt dadurch.
+# "sr.de"-Eintrag entfällt dadurch - SR lässt sich deshalb NICHT als eigener
+# Sender ergänzen, ohne den bestehenden SWR-Eintrag zu überschreiben.
+# Radio Bremen TV und DW haben zwar einen Livestream (siehe
+# fetch_live_streams()), aber in diesem EPG-Feed keine eigenen Einträge -
+# als Sender ergänzt würden sie in "Sendungen wählen" nie etwas anzeigen,
+# deshalb bewusst nicht mit aufgenommen. streams.py deckt zudem nur ÖRR-
+# Sender ab (44 Livestreams, Stand 2026-08-15) - private Sender wie RTL,
+# Sat.1, ProSieben oder VOX haben trotz EPG-Daten keinen frei nutzbaren
+# Livestream und würden beim Aufnehmen immer fehlschlagen.
 channel_map:
   "Das.Erste.de": "ARD Livestream"
   "ZDF.de":       "ZDF Livestream"
@@ -32,6 +42,12 @@ channel_map:
   "PHOENIX.de":   "PHOENIX Livestream"
   "ARTE.de":      "ARTE.DE Livestream"
   "3sat.de":      "3Sat Livestream"
+  "ARD.alpha.de": "ARD Alpha Livestream"
+  "tagesschau24.de": "ARD Tagesschau Livestream"
+  "ORF.1.de":     "ORF-1 Livestream"
+  "ORF.2.de":     "ORF-2 Livestream"
+  "ORF.III.de":   "ORF-3 Livestream"
+  "ORF.SPORT.+.de": "ORF-Sport Livestream"
 
 # EPG-Quelle(n) im XMLTV-Format. Mehrere URLs werden zusammengeführt.
 # epgshare01.online: kostenloser, community-betriebener XMLTV-Aggregator,

@@ -189,8 +189,8 @@ journalctl -u videobuddy -u videobuddy-web -f
 - **`epg.py`**: XMLTV-Parsing, Zeitzonenumrechnung und Spielfilm-Erkennung
   gegen eine handgebaute Beispieldatei verifiziert (`tests/test_epg.py`).
   Zusätzlich live gegen die echte, aktuelle `epg_urls`-Quelle
-  (`epgshare01.online/epgshare01/epg_ripper_DE1.xml.gz`, Stand 2026-08-14)
-  getestet: 26.635 Sendungen über alle Sender geladen, alle 15
+  (`epgshare01.online/epgshare01/epg_ripper_DE1.xml.gz`, Stand 2026-08-15)
+  getestet: 26.635 Sendungen über alle Sender geladen, alle 21
   `channel_map`-Einträge aus `config.example.yaml` lösen zu echten
   EPG-Channel-IDs auf (z. B. ARD → `Das.Erste.de`, 136 Sendungen im
   geladenen Zeitraum). Diese Quelle liefert nur `.xml.gz` ohne
