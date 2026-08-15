@@ -53,8 +53,11 @@ STATUS_ICONS = {
 }
 
 # In diesen Status-Werten bietet das Dashboard zusaetzlich "Hochladen" an -
-# der Dropbox-Upload ist bewusst kein Automatismus, siehe README.
-MANUAL_ACTION_STATUSES = ("ready", "failed")
+# der Dropbox-Upload ist bewusst kein Automatismus, siehe README. "recorded"
+# ist bewusst dabei: die Datei ist direkt nach der Aufnahme schon vollstaendig
+# und hochladbar, der Mediathek-Check (der "recorded" -> "ready" schaltet)
+# ist nur ein informativer Marker und keine Voraussetzung fuers Hochladen.
+MANUAL_ACTION_STATUSES = ("recorded", "ready", "failed")
 
 # In diesen Status-Werten liegt garantiert noch eine vollstaendige Datei auf
 # der Platte - "Direkt" (Download aufs aufrufende Geraet) und "Loeschen"
@@ -276,6 +279,8 @@ def create_app(config: Config | None = None) -> Flask:
             sort_options=DASHBOARD_SORT_OPTIONS,
             sort_key=sort_key,
             has_active_upload=any(j["status"] == "uploading" for j in all_jobs),
+            manual_action_statuses=MANUAL_ACTION_STATUSES,
+            file_action_statuses=FILE_ACTION_STATUSES,
         )
 
     @app.route("/jobs/<job_id>/cancel", methods=["POST"])

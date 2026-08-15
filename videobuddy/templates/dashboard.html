@@ -117,12 +117,12 @@
                     </button>
                   </form>
                 </div>
-              {% elif job.status in ("recorded", "ready", "failed", "uploaded") %}
+              {% elif job.status in file_action_statuses %}
                 <div class="actions">
                   <a class="button icon-btn" href="{{ url_for('direkt', job_id=job.id, status=selected_status, sortierung=sort_key, alle_status=('1' if show_hidden else '')) }}" title="Direkt herunterladen" aria-label="Direkt herunterladen">
                     <svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg>
                   </a>
-                  {% if job.status in ("ready", "failed") %}
+                  {% if job.status in manual_action_statuses %}
                     <form method="post" action="{{ url_for('upload', job_id=job.id) }}">
                       <input type="hidden" name="status" value="{{ selected_status }}">
                       <input type="hidden" name="sortierung" value="{{ sort_key }}">

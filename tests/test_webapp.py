@@ -225,6 +225,27 @@ def test_dashboard_default_sort_is_next_recording_first(client):
     assert default_view.index("Bald dran") < default_view.index("Erst spaeter")
 
 
+def test_upload_offered_and_works_for_recorded_status(client, tmp_path):
+    """"Hochladen" soll nicht auf den (bis zu tagelangen) Mediathek-Check
+    warten - die Datei ist direkt nach der Aufnahme schon vollstaendig."""
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+    file_path = tmp_path / "recording.ts"
+    file_path.write_text("fake video content")
+    scheduler.update_job(config, job["id"], status="recorded", file_path=str(file_path))
+
+    dashboard = client.get("/").get_data(as_text=True)
+    assert f"/jobs/{job['id']}/upload" in dashboard
+
+    response = client.post(f"/jobs/{job['id']}/upload", follow_redirects=True)
+    assert response.status_code == 200
+    assert scheduler.get_job(config, job["id"])["status"] == "uploading"
+
+
 def test_upload_route_sets_uploading_status(client, tmp_path):
     from videobuddy import scheduler
 
