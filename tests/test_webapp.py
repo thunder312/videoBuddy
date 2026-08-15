@@ -37,6 +37,22 @@ def test_dashboard_empty(client):
     assert "Noch keine Aufnahmen geplant" in response.get_data(as_text=True)
 
 
+def test_dashboard_shows_compact_time_range_even_across_midnight(client):
+    """Sendezeit zeigt das Datum nur einmal, auch wenn die Sendung ueber
+    Mitternacht laeuft - Format "TT.MM.JJJJ - HH:MM - HH:MM"."""
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime(2026, 8, 15, 21, 0, tzinfo=timezone.utc)  # 23:00 Berlin (15.08.)
+    end = datetime(2026, 8, 15, 23, 0, tzinfo=timezone.utc)  # 01:00 Berlin (16.08.!)
+    scheduler.create_job(config, "ard.de", "Nachtfilm", start, end, 3, 12)
+
+    body = client.get("/").get_data(as_text=True)
+    # Nur das Start-Datum (15.08.), obwohl die Sendung nach Berliner Zeit
+    # erst am 16.08. endet.
+    assert "15.08.2026 - 23:00 - 01:00" in body
+
+
 def test_sendungen_shows_suggestion(client):
     response = client.get("/sendungen")
     body = response.get_data(as_text=True)
@@ -304,7 +320,7 @@ def test_dashboard_no_upload_estimate_without_known_speed(client, tmp_path):
     scheduler.update_job(config, job["id"], status="ready", file_path=str(file_path))
 
     body = client.get("/").get_data(as_text=True)
-    assert "Upload</small>" not in body
+    assert "<br><small>~" not in body
 
 
 def test_dashboard_shows_estimated_upload_time_once_speed_known(client, tmp_path):
@@ -332,7 +348,7 @@ def test_dashboard_shows_estimated_upload_time_once_speed_known(client, tmp_path
     scheduler.update_job(config, pending_job["id"], status="ready", file_path=str(file_path))
 
     body = client.get("/").get_data(as_text=True)
-    assert "~2 Sek Upload" in body
+    assert "~2 Sek" in body
 
 
 def test_dashboard_shows_upload_progress_and_autorefresh(client, tmp_path):

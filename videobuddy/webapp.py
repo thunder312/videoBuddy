@@ -34,6 +34,24 @@ STATUS_LABELS = {
     "failed": "fehlgeschlagen",
 }
 
+# Status-Badges zeigen nur noch ein Icon (Platzersparnis in der Tabelle) -
+# die Bedeutung steckt im title/aria-label-Attribut (Mouseover) bzw. in der
+# Legende, die auf schmalen Bildschirmen eingeblendet wird (siehe
+# dashboard.html). Icons selbst liegen als <symbol> im SVG-Sprite in
+# base.html.
+STATUS_ICONS = {
+    "scheduled": "icon-clock",
+    "recording": "icon-dot",
+    "recorded": "icon-check",
+    "ready": "icon-alert",
+    "uploading": "icon-cloud-upload",
+    "uploaded": "icon-cloud-check",
+    "discarded": "icon-trash",
+    "canceled": "icon-cancel",
+    "deleted": "icon-trash",
+    "failed": "icon-warning",
+}
+
 # In diesen Status-Werten bietet das Dashboard zusaetzlich "Hochladen" an -
 # der Dropbox-Upload ist bewusst kein Automatismus, siehe README.
 MANUAL_ACTION_STATUSES = ("ready", "failed")
@@ -71,6 +89,27 @@ def _time_only(value) -> str:
     if isinstance(value, str):
         value = datetime.fromisoformat(value)
     return value.astimezone(BERLIN).strftime("%H:%M")
+
+
+def _time_range_label(start, end) -> str:
+    """Kompakte Sendezeit fuers Dashboard - Datum nur einmal, auch wenn die
+    Sendung ueber Mitternacht laeuft (Start-Datum reicht als Orientierung)."""
+    if start is None or end is None:
+        return "-"
+    if isinstance(start, str):
+        start = datetime.fromisoformat(start)
+    if isinstance(end, str):
+        end = datetime.fromisoformat(end)
+    start_local = start.astimezone(BERLIN)
+    end_local = end.astimezone(BERLIN)
+    return (
+        f"{start_local.strftime('%d.%m.%Y')} - "
+        f"{start_local.strftime('%H:%M')} - {end_local.strftime('%H:%M')}"
+    )
+
+
+def _status_icon(status: str) -> str:
+    return STATUS_ICONS.get(status, "icon-alert")
 
 
 def _status_label(status: str) -> str:
@@ -186,7 +225,9 @@ def create_app(config: Config | None = None) -> Flask:
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
     app.jinja_env.filters["local_time"] = _local_time
     app.jinja_env.filters["time_only"] = _time_only
+    app.jinja_env.filters["time_range"] = _time_range_label
     app.jinja_env.filters["status_label"] = _status_label
+    app.jinja_env.filters["status_icon"] = _status_icon
     app.jinja_env.filters["channel_name"] = _channel_name
     app.jinja_env.filters["duration"] = _duration_label
 
