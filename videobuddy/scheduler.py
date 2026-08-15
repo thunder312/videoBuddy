@@ -81,6 +81,8 @@ def create_job(
             "recorded_at": None,
             "mediathek_check_due": None,
             "found_in_mediathek": False,
+            "upload_progress": None,
+            "upload_total": None,
         }
         jobs.append(new_job)
         outcome["job"] = new_job

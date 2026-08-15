@@ -56,15 +56,15 @@
           {% else %}
             {% set c = row.candidate %}
             <tr class="{{ 'suggestion' if c.is_suggestion else '' }}">
-              <td>{{ c.start | time_only }}</td>
-              <td>{{ channel_options.get(c.channel, c.channel) | channel_name }}</td>
-              <td>
+              <td data-label="Start">{{ c.start | time_only }}</td>
+              <td data-label="Sender">{{ channel_options.get(c.channel, c.channel) | channel_name }}</td>
+              <td data-label="Titel">
                 {% if c.is_suggestion %}<span class="badge badge-suggestion">Vorschlag</span>{% endif %}
                 {{ c.title }}
               </td>
-              <td>{{ c.stop | time_only }}</td>
-              <td>{{ c.duration_minutes | round | int }} min</td>
-              <td>
+              <td data-label="Ende">{{ c.stop | time_only }}</td>
+              <td data-label="Dauer">{{ c.duration_minutes | round | int }} min</td>
+              <td data-label="Aktion">
                 <form method="post" action="{{ url_for('aufnehmen') }}">
                   <input type="hidden" name="channel" value="{{ c.channel }}">
                   <input type="hidden" name="title" value="{{ c.title }}">

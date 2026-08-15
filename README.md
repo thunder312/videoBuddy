@@ -48,11 +48,14 @@ noch deine Handarbeit — siehe „Offene Punkte" unten.
         Status "ready" (Datei bleibt immer erhalten), Fund nur als
         found_in_mediathek-Marker gespeichert ("auch in Mediathek"-Badge)
                     │
-        wartet in der Aufnahmen-Liste auf Klick "Hochladen" oder "Löschen"
+        wartet in der Aufnahmen-Liste auf Klick "Hochladen" oder "Löschen" -
+        "Direkt" (Download aufs aufrufende Gerät) und "Löschen" bleiben dabei
+        auch nach einem Dropbox-Upload verfügbar, solange die Datei noch auf
+        der Platte liegt
                                 │              │
                      dropbox_upload.py    recorder.delete_files()
-                     → Dropbox, dann      (sofort, keine Bestätigung
-                     lokal löschen         durch die Weboberfläche)
+                     → Dropbox (Datei     (sofort, keine Bestätigung
+                     bleibt lokal!)        durch die Weboberfläche)
 ```
 
 Zwei Python-Prozesse teilen sich denselben `data/`-Ordner:
@@ -136,15 +139,21 @@ journalctl -u videobuddy -u videobuddy-web -f
    nicht als Vorschlag markiert ist. Mit „Alle Vorschläge übernehmen" lassen
    sich alle aktuell erkannten Vorschläge auf einmal einplanen.
 3. **Aufnahmen** (Startseite) — Status aller geplanten/laufenden/erledigten
-   Aufnahmen, geplante Aufnahmen lassen sich stornieren. Fertige Aufnahmen
-   (Status „bereit (nicht hochgeladen)") zeigen zwei Buttons: **Hochladen**
-   (läuft im Hintergrund im Scheduler-Loop, blockiert die Weboberfläche
-   nicht) und **Löschen** (sofort, ohne Rückfrage) — unabhängig davon, ob
-   die Sendung in der Mediathek gefunden wurde. Ein Fund wird nur als
+   Aufnahmen, standardmäßig sortiert nach „nächste Aufnahme zuerst". Geplante
+   Aufnahmen lassen sich stornieren. Sobald eine Datei komplett auf der Platte
+   liegt (Status „aufgenommen", „bereit (nicht hochgeladen)",
+   „fehlgeschlagen" oder „hochgeladen") zeigt die Zeile Icon-Buttons:
+   **Direkt** (lädt die Datei direkt aufs aufrufende Gerät herunter, ohne
+   Umweg über Dropbox), **Hochladen** (nur vor dem ersten erfolgreichen
+   Upload bzw. nach einem fehlgeschlagenen Versuch; läuft im Hintergrund im
+   Scheduler-Loop, blockiert die Weboberfläche nicht, zeigt während des
+   Uploads einen Fortschrittsbalken) und **Löschen** (sofort, ohne
+   Rückfrage) — unabhängig davon, ob die Sendung in der Mediathek gefunden
+   oder schon zu Dropbox hochgeladen wurde. Ein Mediathek-Fund wird nur als
    Zusatz-Badge „auch in Mediathek" angezeigt, ändert aber nichts an der
-   Datei; die Entscheidung bleibt immer bei dir. Bei einem fehlgeschlagenen
-   Upload bleiben
-   beide Buttons erhalten, um es erneut zu versuchen oder aufzugeben.
+   Datei; die Entscheidung bleibt immer bei dir. Die Datei wird nach einem
+   erfolgreichen Dropbox-Upload bewusst NICHT automatisch gelöscht — **Direkt**
+   und **Löschen** bleiben verfügbar, bis du die Aufnahme manuell entfernst.
 
 ## Offene Punkte, bevor das produktiv laufen sollte
 
@@ -270,5 +279,8 @@ Ein zweistündiger Film in ordentlicher Qualität liegt schnell bei mehreren
 GB. Über „Nur Vorschläge zeigen" plus eine bewusst kleine Senderauswahl in
 den Einstellungen lässt sich die Menge an Aufnahmen gut im Rahmen halten.
 `recordings/` (siehe oben, eigenes Volume) sollte deshalb auf eine Platte
-mit ausreichend Platz zeigen — dort liegen die Aufnahmen zwischen
-Aufnahmeende und Dropbox-Upload bzw. Verwerfen.
+mit ausreichend Platz zeigen — dort liegen die Aufnahmen ab Aufnahmeende,
+und zwar bewusst auch noch **nach** einem erfolgreichen Dropbox-Upload
+(„Direkt" und „Löschen" bleiben dafür verfügbar). Ohne regelmäßiges
+manuelles Löschen wächst `recordings/` also unbegrenzt weiter — im Blick
+behalten oder zeitnah über den Löschen-Button aufräumen.

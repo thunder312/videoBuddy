@@ -194,6 +194,21 @@ def test_dashboard_sort_by_titel_and_sender(client):
     assert by_sender.index("ARD") < by_sender.index("ZDF")
 
 
+def test_dashboard_default_sort_is_next_recording_first(client):
+    """Standard-Sortierung zeigt die naechste anstehende Aufnahme zuerst -
+    also aufsteigend nach Sendezeit, nicht mehr "neueste zuerst"."""
+    from videobuddy import scheduler
+
+    config = client.app_config
+    soon = datetime.now(timezone.utc) + timedelta(hours=2)
+    later = datetime.now(timezone.utc) + timedelta(days=3)
+    scheduler.create_job(config, "ard.de", "Bald dran", soon, soon + timedelta(minutes=90), 3, 12)
+    scheduler.create_job(config, "zdf.de", "Erst spaeter", later, later + timedelta(minutes=90), 3, 12)
+
+    default_view = client.get("/").get_data(as_text=True)
+    assert default_view.index("Bald dran") < default_view.index("Erst spaeter")
+
+
 def test_upload_route_sets_uploading_status(client, tmp_path):
     from videobuddy import scheduler
 
@@ -228,6 +243,98 @@ def test_delete_route_removes_file_and_marks_deleted(client, tmp_path):
     assert response.status_code == 200
     assert scheduler.get_job(config, job["id"])["status"] == "deleted"
     assert not file_path.exists()
+
+
+def test_direkt_and_delete_stay_available_after_upload(client, tmp_path):
+    """"Direkt" und "Loeschen" bleiben verfuegbar, solange die Datei noch auf
+    dem Server liegt - auch nach erfolgreichem Dropbox-Upload. "Hochladen"
+    macht dagegen nur noch vor dem Upload Sinn."""
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+    file_path = tmp_path / "recording.ts"
+    file_path.write_text("fake video content")
+    scheduler.update_job(config, job["id"], status="uploaded", file_path=str(file_path))
+
+    body = client.get("/").get_data(as_text=True)
+    assert f"/jobs/{job['id']}/direkt" in body
+    assert f"/jobs/{job['id']}/delete" in body
+    assert f"/jobs/{job['id']}/upload" not in body
+
+    direkt_response = client.get(f"/jobs/{job['id']}/direkt")
+    assert direkt_response.status_code == 200
+    assert direkt_response.get_data() == b"fake video content"
+    direkt_response.close()  # Dateihandle freigeben, bevor gleich geloescht wird
+
+    delete_response = client.post(f"/jobs/{job['id']}/delete", follow_redirects=True)
+    assert delete_response.status_code == 200
+    assert scheduler.get_job(config, job["id"])["status"] == "deleted"
+    assert not file_path.exists()
+
+
+def test_dashboard_shows_upload_progress_and_autorefresh(client, tmp_path):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+    file_path = tmp_path / "recording.ts"
+    file_path.write_text("fake video content")
+    scheduler.update_job(
+        config,
+        job["id"],
+        status="uploading",
+        file_path=str(file_path),
+        upload_progress=500_000,
+        upload_total=1_000_000,
+    )
+
+    body = client.get("/").get_data(as_text=True)
+
+    assert "50%" in body
+    assert '<meta http-equiv="refresh" content="10">' in body
+
+
+def test_dashboard_no_autorefresh_without_active_upload(client):
+    body = client.get("/").get_data(as_text=True)
+    assert "http-equiv=\"refresh\"" not in body
+
+
+def test_direkt_route_streams_file_as_attachment(client, tmp_path):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+    file_path = tmp_path / "recording.ts"
+    file_path.write_text("fake video content")
+    scheduler.update_job(config, job["id"], status="ready", file_path=str(file_path))
+
+    response = client.get(f"/jobs/{job['id']}/direkt")
+
+    assert response.status_code == 200
+    assert response.headers["Content-Disposition"].startswith("attachment")
+    assert "recording.ts" in response.headers["Content-Disposition"]
+    assert response.get_data() == b"fake video content"
+
+
+def test_direkt_route_rejected_for_scheduled_job(client):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+
+    response = client.get(f"/jobs/{job['id']}/direkt", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert scheduler.get_job(config, job["id"])["status"] == "scheduled"
 
 
 def test_upload_and_delete_rejected_for_scheduled_job(client):

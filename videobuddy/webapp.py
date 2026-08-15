@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, flash, redirect, render_template, request, send_file, url_for
 
 from . import epg, recorder, scheduler
 from .candidates import build_candidates
@@ -34,16 +34,24 @@ STATUS_LABELS = {
     "failed": "fehlgeschlagen",
 }
 
-# In diesen Status-Werten bietet das Dashboard "Hochladen" und "Löschen" an -
+# In diesen Status-Werten bietet das Dashboard zusaetzlich "Hochladen" an -
 # der Dropbox-Upload ist bewusst kein Automatismus, siehe README.
 MANUAL_ACTION_STATUSES = ("ready", "failed")
+
+# In diesen Status-Werten liegt garantiert noch eine vollstaendige Datei auf
+# der Platte - "Direkt" (Download aufs aufrufende Geraet) und "Loeschen"
+# bleiben deshalb hier verfuegbar, unabhaengig davon, ob schon zu Dropbox
+# hochgeladen wurde. main.py loescht die Datei nach einem erfolgreichen
+# Upload bewusst nicht mehr automatisch, siehe README "Speicherbedarf im
+# Blick behalten".
+FILE_ACTION_STATUSES = ("recorded", "ready", "failed", "uploaded")
 
 # Standardmäßig ausgeblendet (Checkbox "Stornierte/Gelöschte einblenden"),
 # es sei denn im Status-Filter wird gezielt genau danach gefiltert.
 HIDDEN_BY_DEFAULT_STATUSES = ("canceled", "deleted")
 
 DASHBOARD_SORT_OPTIONS = [
-    ("sendezeit", "Sendezeit (neueste zuerst)"),
+    ("sendezeit", "Sendezeit (nächste Aufnahme zuerst)"),
     ("sender", "Sender"),
     ("titel", "Titel"),
 ]
@@ -151,9 +159,7 @@ def create_app(config: Config | None = None) -> Flask:
             jobs = [j for j in jobs if j["status"] == selected_status]
         elif not show_hidden:
             jobs = [j for j in jobs if j["status"] not in HIDDEN_BY_DEFAULT_STATUSES]
-        jobs.sort(
-            key=_dashboard_sort_key(config, sort_key), reverse=(sort_key == "sendezeit")
-        )
+        jobs.sort(key=_dashboard_sort_key(config, sort_key))
 
         return render_template(
             "dashboard.html",
@@ -165,6 +171,7 @@ def create_app(config: Config | None = None) -> Flask:
             selected_status=selected_status,
             sort_options=DASHBOARD_SORT_OPTIONS,
             sort_key=sort_key,
+            has_active_upload=any(j["status"] == "uploading" for j in all_jobs),
         )
 
     @app.route("/jobs/<job_id>/cancel", methods=["POST"])
@@ -184,14 +191,38 @@ def create_app(config: Config | None = None) -> Flask:
         # Setzt nur den Status - der eigentliche Upload läuft im
         # Scheduler-Loop (main.py), damit der Webrequest nicht für die
         # ganze Dauer des Uploads blockiert.
-        scheduler.update_job(config, job_id, status="uploading", error=None)
+        scheduler.update_job(
+            config,
+            job_id,
+            status="uploading",
+            error=None,
+            upload_progress=None,
+            upload_total=None,
+        )
         flash(f'"{job["title"]}" wird im Hintergrund zu Dropbox hochgeladen.', "success")
         return _dashboard_redirect()
+
+    @app.route("/jobs/<job_id>/direkt")
+    def direkt(job_id):
+        job = scheduler.get_job(config, job_id)
+        if (
+            job is None
+            or job["status"] not in FILE_ACTION_STATUSES
+            or not job.get("file_path")
+            or not os.path.exists(job["file_path"])
+        ):
+            flash("Datei nicht (mehr) verfügbar.", "error")
+            return _dashboard_redirect()
+        return send_file(
+            job["file_path"],
+            as_attachment=True,
+            download_name=os.path.basename(job["file_path"]),
+        )
 
     @app.route("/jobs/<job_id>/delete", methods=["POST"])
     def delete_recording(job_id):
         job = scheduler.get_job(config, job_id)
-        if job is None or job["status"] not in MANUAL_ACTION_STATUSES:
+        if job is None or job["status"] not in FILE_ACTION_STATUSES:
             flash("Konnte nicht gelöscht werden.", "error")
             return _dashboard_redirect()
         recorder.delete_files(job["file_path"])

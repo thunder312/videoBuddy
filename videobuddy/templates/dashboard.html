@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Aufnahmen - videoBuddy{% endblock %}
+{% block head %}
+  {% if has_active_upload %}
+    <meta http-equiv="refresh" content="10">
+  {% endif %}
+{% endblock %}
 {% block content %}
   <h1>Aufnahmen</h1>
 
@@ -52,34 +57,53 @@
       <tbody>
         {% for job in jobs %}
           <tr class="status-{{ job.status }}">
-            <td>{{ channel_map.get(job.channel, job.channel) | channel_name }}</td>
-            <td>{{ job.title }}</td>
-            <td>{{ job.epg_start | local_time }} - {{ job.epg_end | local_time }}</td>
-            <td><span class="badge badge-{{ job.status }}">{{ job.status | status_label }}</span>
+            <td data-label="Sender">{{ channel_map.get(job.channel, job.channel) | channel_name }}</td>
+            <td data-label="Titel">{{ job.title }}</td>
+            <td data-label="Sendezeit">{{ job.epg_start | local_time }} - {{ job.epg_end | local_time }}</td>
+            <td data-label="Status"><span class="badge badge-{{ job.status }}">{{ job.status | status_label }}</span>
               {% if job.found_in_mediathek %}<span class="badge badge-mediathek">auch in Mediathek</span>{% endif %}
               {% if job.status == "failed" and job.error %}<br><small>{{ job.error }}</small>{% endif %}
+              {% if job.status == "uploading" and job.upload_total %}
+                <div class="progress" title="{{ job.upload_progress | filesizeformat }} von {{ job.upload_total | filesizeformat }}">
+                  <div class="progress-bar" style="width: {{ (100 * (job.upload_progress or 0) / job.upload_total) | round(1) }}%"></div>
+                </div>
+                <small>{{ (100 * (job.upload_progress or 0) / job.upload_total) | round | int }}% ({{ job.upload_progress | filesizeformat }} / {{ job.upload_total | filesizeformat }})</small>
+              {% endif %}
             </td>
-            <td>
+            <td data-label="Aktion">
               {% if job.status == "scheduled" %}
-                <form method="post" action="{{ url_for('cancel', job_id=job.id) }}">
-                  <input type="hidden" name="status" value="{{ selected_status }}">
-                  <input type="hidden" name="sortierung" value="{{ sort_key }}">
-                  <input type="hidden" name="alle_status" value="{{ '1' if show_hidden else '' }}">
-                  <button type="submit">Stornieren</button>
-                </form>
-              {% elif job.status in ("ready", "failed") %}
                 <div class="actions">
-                  <form method="post" action="{{ url_for('upload', job_id=job.id) }}">
+                  <form method="post" action="{{ url_for('cancel', job_id=job.id) }}">
                     <input type="hidden" name="status" value="{{ selected_status }}">
                     <input type="hidden" name="sortierung" value="{{ sort_key }}">
                     <input type="hidden" name="alle_status" value="{{ '1' if show_hidden else '' }}">
-                    <button type="submit">Hochladen</button>
+                    <button type="submit" class="icon-btn" title="Stornieren" aria-label="Stornieren">
+                      <svg class="icon" aria-hidden="true"><use href="#icon-cancel"></use></svg>
+                    </button>
                   </form>
+                </div>
+              {% elif job.status in ("recorded", "ready", "failed", "uploaded") %}
+                <div class="actions">
+                  <a class="button icon-btn" href="{{ url_for('direkt', job_id=job.id, status=selected_status, sortierung=sort_key, alle_status=('1' if show_hidden else '')) }}" title="Direkt herunterladen" aria-label="Direkt herunterladen">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg>
+                  </a>
+                  {% if job.status in ("ready", "failed") %}
+                    <form method="post" action="{{ url_for('upload', job_id=job.id) }}">
+                      <input type="hidden" name="status" value="{{ selected_status }}">
+                      <input type="hidden" name="sortierung" value="{{ sort_key }}">
+                      <input type="hidden" name="alle_status" value="{{ '1' if show_hidden else '' }}">
+                      <button type="submit" class="icon-btn" title="Hochladen" aria-label="Hochladen">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-cloud-upload"></use></svg>
+                      </button>
+                    </form>
+                  {% endif %}
                   <form method="post" action="{{ url_for('delete_recording', job_id=job.id) }}">
                     <input type="hidden" name="status" value="{{ selected_status }}">
                     <input type="hidden" name="sortierung" value="{{ sort_key }}">
                     <input type="hidden" name="alle_status" value="{{ '1' if show_hidden else '' }}">
-                    <button type="submit" class="danger">Löschen</button>
+                    <button type="submit" class="icon-btn danger" title="Löschen" aria-label="Aufnahme löschen">
+                      <svg class="icon" aria-hidden="true"><use href="#icon-trash"></use></svg>
+                    </button>
                   </form>
                 </div>
               {% endif %}

@@ -124,15 +124,39 @@ def _process_recorded(config: Config, job: dict, now: datetime) -> None:
 def _process_uploading(config: Config, job: dict) -> None:
     """Wird nur erreicht, wenn die Weboberfläche den Status manuell auf
     "uploading" gesetzt hat (Klick auf "Hochladen" bei einer "ready"- oder
-    "failed"-Aufnahme)."""
+    "failed"-Aufnahme). Löscht die lokale Datei nach einem erfolgreichen
+    Upload bewusst NICHT mehr automatisch - "Direkt" (Download aufs
+    aufrufende Gerät) und "Löschen" bleiben in der Weboberfläche verfügbar,
+    bis der Nutzer die Datei manuell entfernt, siehe README "Speicherbedarf
+    im Blick behalten"."""
+
+    def on_progress(uploaded: int, total: int) -> None:
+        scheduler.update_job(
+            config, job["id"], upload_progress=uploaded, upload_total=total
+        )
+
     try:
-        dropbox_upload.upload_file(job["file_path"], config.dropbox)
-        recorder.delete_files(job["file_path"])
-        scheduler.update_job(config, job["id"], status="uploaded")
+        dropbox_upload.upload_file(
+            job["file_path"], config.dropbox, on_progress=on_progress
+        )
+        scheduler.update_job(
+            config,
+            job["id"],
+            status="uploaded",
+            upload_progress=None,
+            upload_total=None,
+        )
         logger.info("Zu Dropbox hochgeladen: %s", job["title"])
     except Exception as exc:
         logger.exception("Dropbox-Upload fehlgeschlagen: %s", job["title"])
-        scheduler.update_job(config, job["id"], status="failed", error=str(exc))
+        scheduler.update_job(
+            config,
+            job["id"],
+            status="failed",
+            error=str(exc),
+            upload_progress=None,
+            upload_total=None,
+        )
 
 
 def run_once(config: Config) -> None:

@@ -85,7 +85,41 @@ def test_process_uploading_success(make_config, tmp_path, monkeypatch):
 
     updated = scheduler.get_job(config, job["id"])
     assert updated["status"] == "uploaded"
-    assert not file_path.exists()
+    # Datei bleibt nach dem Upload bewusst erhalten (manuelles Loeschen ueber
+    # die Weboberflaeche), damit "Direkt" auch nach dem Dropbox-Upload noch
+    # verfuegbar ist.
+    assert file_path.exists()
+
+
+def test_process_uploading_persists_progress_and_clears_it_on_success(
+    make_config, tmp_path, monkeypatch
+):
+    config = make_config()
+    job = scheduler.create_job(config, "ard.de", "Tatort", START, END, 3, 12)
+    file_path = tmp_path / "recording.mkv"
+    file_path.write_text("fake video content")
+    job = scheduler.update_job(
+        config, job["id"], status="uploading", file_path=str(file_path)
+    )
+
+    seen_mid_upload = {}
+
+    def fake_upload(path, dropbox_config, on_progress=None, **kwargs):
+        on_progress(500, 1000)
+        seen_mid_upload.update(scheduler.get_job(config, job["id"]))
+        return "/PVR-OeRR/recording.mkv"
+
+    monkeypatch.setattr(main.dropbox_upload, "upload_file", fake_upload)
+
+    main._process_uploading(config, job)
+
+    assert seen_mid_upload["upload_progress"] == 500
+    assert seen_mid_upload["upload_total"] == 1000
+
+    updated = scheduler.get_job(config, job["id"])
+    assert updated["status"] == "uploaded"
+    assert updated["upload_progress"] is None
+    assert updated["upload_total"] is None
 
 
 def test_process_uploading_failure_keeps_file_and_marks_failed(make_config, tmp_path, monkeypatch):
@@ -97,7 +131,9 @@ def test_process_uploading_failure_keeps_file_and_marks_failed(make_config, tmp_
         config, job["id"], status="uploading", file_path=str(file_path)
     )
 
-    def _boom(*a, **k):
+    def _boom(*a, on_progress=None, **k):
+        if on_progress is not None:
+            on_progress(500, 1000)
         raise RuntimeError("network down")
 
     monkeypatch.setattr(main.dropbox_upload, "upload_file", _boom)
@@ -108,3 +144,5 @@ def test_process_uploading_failure_keeps_file_and_marks_failed(make_config, tmp_
     assert updated["status"] == "failed"
     assert "network down" in updated["error"]
     assert file_path.exists()
+    assert updated["upload_progress"] is None
+    assert updated["upload_total"] is None
