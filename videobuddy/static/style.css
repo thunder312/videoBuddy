@@ -234,12 +234,26 @@ tr.day-separator:hover td {
   font-size: 0.9rem;
 }
 
-.filters select {
+.filters select,
+.filters input[type="time"],
+.filters input[type="search"] {
   padding: 0.35rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: 0.4rem;
   background: var(--surface);
   color: var(--text);
+}
+
+.scheduled-marker {
+  cursor: default;
+  background: var(--neutral-bg);
+  border-color: var(--neutral-bg);
+  color: var(--muted);
+}
+
+.scheduled-marker:hover {
+  background: var(--neutral-bg);
+  border-color: var(--neutral-bg);
 }
 
 .filters .checkbox-inline {
@@ -462,7 +476,9 @@ a.button:hover {
     height: 0.85rem;
   }
 
-  .filters select {
+  .filters select,
+  .filters input[type="time"],
+  .filters input[type="search"] {
     flex: 1;
   }
 

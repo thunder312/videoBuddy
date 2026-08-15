@@ -92,6 +92,97 @@ def test_sendungen_titel_plain_without_epg_description(client):
     assert "Der Blaue Planet" in body
 
 
+def test_sendungen_zeit_filter(client, monkeypatch):
+    """Tageszeit-Filter ist datumsunabhaengig - filtert nach der Uhrzeit in
+    Berliner Zeit, nicht nach absoluten Zeitstempeln."""
+    day = datetime(2026, 8, 20, tzinfo=timezone.utc)
+    morning = day.replace(hour=6, minute=0)  # 08:00 Berlin (CEST, +2h)
+    evening = day.replace(hour=19, minute=0)  # 21:00 Berlin
+    entries = [
+        EpgEntry(
+            channel="ard.de", title="Morgenmagazin", start=morning,
+            stop=morning + timedelta(minutes=30), categories=[], description="",
+        ),
+        EpgEntry(
+            channel="ard.de", title="Spaetfilm", start=evening,
+            stop=evening + timedelta(minutes=90), categories=[], description="",
+        ),
+    ]
+    monkeypatch.setattr(epg, "fetch_epg", lambda urls: entries)
+
+    body = client.get("/sendungen?zeit_von=20:00&zeit_bis=23:00").get_data(as_text=True)
+    assert "Spaetfilm" in body
+    assert "Morgenmagazin" not in body
+
+
+def test_sendungen_textsuche(client, monkeypatch):
+    future_start = datetime.now(timezone.utc) + timedelta(hours=2)
+    entries = [
+        EpgEntry(
+            channel="ard.de", title="Tatort", start=future_start,
+            stop=future_start + timedelta(minutes=90), categories=[], description="",
+        ),
+        EpgEntry(
+            channel="zdf.de", title="Der Alte", start=future_start,
+            stop=future_start + timedelta(minutes=90), categories=[], description="",
+        ),
+    ]
+    monkeypatch.setattr(epg, "fetch_epg", lambda urls: entries)
+
+    body = client.get("/sendungen?suche=tatort").get_data(as_text=True)  # klein geschrieben
+    assert "Tatort" in body
+    assert "Der Alte" not in body
+
+
+def test_sendungen_shows_eingeplant_for_already_scheduled_candidate(client, monkeypatch):
+    """Nach dem Einplanen zeigt "Sendungen wählen" fuer diese Sendung
+    "Eingeplant" statt "Aufnehmen" - auch nach einem echten Reload, nicht
+    nur direkt nach dem JS-Klick."""
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    entries = [
+        EpgEntry(
+            channel="ard.de", title="Der Blaue Planet", start=start, stop=end,
+            categories=[], description="",
+        )
+    ]
+    monkeypatch.setattr(epg, "fetch_epg", lambda urls: entries)
+
+    scheduler.create_job(config, "ard.de", "Der Blaue Planet", start, end, 3, 12)
+
+    body = client.get("/sendungen").get_data(as_text=True)
+    assert "Eingeplant" in body
+    assert ">Aufnehmen<" not in body
+
+
+def test_aufnehmen_via_fetch_returns_204_without_redirect(client):
+    """Der JS-Klick-Handler schickt den Request mit diesem Header - die
+    Route soll dann nur 204 liefern, ohne Flash/Redirect, damit die Seite
+    nicht neu laedt und die Scrollposition erhalten bleibt."""
+    future_start = datetime.now(timezone.utc) + timedelta(hours=2)
+    future_end = future_start + timedelta(minutes=90)
+
+    response = client.post(
+        "/sendungen/aufnehmen",
+        data={
+            "channel": "ard.de",
+            "title": "Der Blaue Planet",
+            "epg_start": future_start.isoformat(),
+            "epg_end": future_end.isoformat(),
+        },
+        headers={"X-Requested-With": "fetch"},
+    )
+
+    assert response.status_code == 204
+    assert response.get_data() == b""
+
+    dashboard = client.get("/")
+    assert "Der Blaue Planet" in dashboard.get_data(as_text=True)
+
+
 def test_aufnehmen_then_dashboard_shows_job(client):
     future_start = datetime.now(timezone.utc) + timedelta(hours=2)
     future_end = future_start + timedelta(minutes=90)

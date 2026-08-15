@@ -114,6 +114,18 @@ def _date_label(d) -> str:
     return f"{WEEKDAYS[d.weekday()]}, {d.strftime('%d.%m.%Y')}"
 
 
+def _in_time_of_day_range(value: datetime, von: str, bis: str) -> bool:
+    """Tageszeit-Filter fuer "Sendungen wählen", unabhängig vom Datum.
+    von > bis wird als Bereich über Mitternacht interpretiert (z. B.
+    22:00-02:00 für Spätfilme)."""
+    t = value.astimezone(BERLIN).time()
+    von_t = datetime.strptime(von or "00:00", "%H:%M").time()
+    bis_t = datetime.strptime(bis or "23:59", "%H:%M").time()
+    if von_t <= bis_t:
+        return von_t <= t <= bis_t
+    return t >= von_t or t <= bis_t
+
+
 def _channel_name(stream_title: str) -> str:
     """Zeigt Sendernamen ohne den "Livestream"-Zusatz aus streams.py an.
     Nur fürs Anzeigen - config.channel_map selbst bleibt unverändert, weil
@@ -362,11 +374,21 @@ def create_app(config: Config | None = None) -> Flask:
         only_suggestions = request.args.get("nur_vorschlaege") == "1"
         selected_date = request.args.get("datum") or ""
         selected_channel = request.args.get("sender") or ""
+        zeit_von = request.args.get("zeit_von") or ""
+        zeit_bis = request.args.get("zeit_bis") or ""
+        suche = request.args.get("suche") or ""
 
         entries = get_epg_entries()
         candidates = build_candidates(entries, settings_data)
         if only_suggestions:
             candidates = [c for c in candidates if c.is_suggestion]
+        if suche:
+            needle = suche.lower()
+            candidates = [c for c in candidates if needle in c.title.lower()]
+        if zeit_von or zeit_bis:
+            candidates = [
+                c for c in candidates if _in_time_of_day_range(c.start, zeit_von, zeit_bis)
+            ]
 
         available_dates = sorted(
             {c.start.astimezone(BERLIN).date() for c in candidates}
@@ -390,6 +412,16 @@ def create_app(config: Config | None = None) -> Flask:
             if channel_id in config.channel_map
         }
 
+        # Zeigt "Eingeplant" statt "Aufnehmen", wenn für genau diese
+        # Sendezeit bereits ein aktiver Job existiert - z. B. nach einem
+        # Reload, nachdem der JS-Klick-Handler (siehe sendungen.html) schon
+        # optimistisch umgeschaltet hatte.
+        scheduled_keys = {
+            (j["channel"], j["epg_start"], j["epg_end"])
+            for j in scheduler.list_jobs(config)
+            if j["status"] in scheduler.ACTIVE_STATUSES
+        }
+
         table_rows = _build_table_rows(candidates, show_day_separators=not selected_date)
 
         return render_template(
@@ -401,6 +433,10 @@ def create_app(config: Config | None = None) -> Flask:
             selected_date=selected_date,
             channel_options=channel_options,
             selected_channel=selected_channel,
+            zeit_von=zeit_von,
+            zeit_bis=zeit_bis,
+            suche=suche,
+            scheduled_keys=scheduled_keys,
         )
 
     @app.route("/sendungen/aufnehmen", methods=["POST"])
@@ -416,6 +452,12 @@ def create_app(config: Config | None = None) -> Flask:
             buffer_before_minutes=settings_data["buffer_before_minutes"],
             buffer_after_minutes=settings_data["buffer_after_minutes"],
         )
+        # Der JS-Klick-Handler in sendungen.html schickt diesen Request per
+        # fetch() und schaltet den geklickten Button selbst auf "Eingeplant"
+        # um, ohne die Seite neu zu laden (siehe dortiger Kommentar) - ohne
+        # JS greift stattdessen der normale Redirect-Fallback unten.
+        if request.headers.get("X-Requested-With") == "fetch":
+            return ("", 204)
         flash(f'"{title}" eingeplant.', "success")
         return redirect(
             url_for(
@@ -423,6 +465,9 @@ def create_app(config: Config | None = None) -> Flask:
                 nur_vorschlaege=request.form.get("nur_vorschlaege") or None,
                 datum=request.form.get("datum") or None,
                 sender=request.form.get("sender_filter") or None,
+                zeit_von=request.form.get("zeit_von") or None,
+                zeit_bis=request.form.get("zeit_bis") or None,
+                suche=request.form.get("suche") or None,
             )
         )
 
