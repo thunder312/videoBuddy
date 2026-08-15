@@ -1,13 +1,29 @@
 :root {
   color-scheme: light dark;
-  --border: #ccc;
-  --accent: #2a6f97;
-  --suggestion-bg: #eaf4fb;
-  --danger: #b3261e;
+
+  /* Palette abgeleitet aus dem Favicon-Verlauf (Teal -> Blau -> Violett,
+     dunkles Navy als Grundton, kraeftiges Korallrot beim REC-Punkt). */
+  --teal: #1fb3c0;
+  --blue: #2c5aa0;
+  --purple: #8a45b0;
+  --navy: #1f2b47;
+
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --border: #dbe1ec;
+  --neutral-bg: #e7eaf2;
+  --text: #1c2436;
+  --muted: #67708a;
+
+  --accent: var(--blue);
+  --accent-dark: var(--navy);
+
+  --suggestion-bg: #e7f4f6;
+  --danger: #c93a4e;
+  --danger-dark: #a92e40;
   --success: #2e7d32;
   --warning: #b26a00;
-  --live: #c62828;
-  --muted: #757575;
+  --live: #f0495a;
 }
 
 * { box-sizing: border-box; }
@@ -16,24 +32,33 @@ body {
   font-family: system-ui, sans-serif;
   margin: 0;
   line-height: 1.4;
+  background: var(--bg);
+  color: var(--text);
 }
 
 nav {
   display: flex;
   gap: 1.25rem;
   align-items: center;
-  padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0.85rem 1.5rem;
+  background: linear-gradient(100deg, #146b78 0%, #1c3f66 30%, #2c4f86 60%, #5a3d7a 100%);
+  box-shadow: 0 2px 8px rgba(20, 30, 50, 0.18);
 }
 
 nav .brand {
   font-weight: bold;
   margin-right: 1rem;
+  color: #fff;
+  letter-spacing: 0.02em;
 }
 
 nav a {
   text-decoration: none;
-  color: var(--accent);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+nav a:hover {
+  color: #fff;
 }
 
 main {
@@ -45,32 +70,58 @@ main {
 table {
   width: 100%;
   border-collapse: collapse;
+  background: var(--surface);
+  border-radius: 0.6rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(20, 30, 60, 0.07);
 }
 
 th, td {
   text-align: left;
-  padding: 0.5rem;
+  padding: 0.6rem 0.75rem;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
+}
+
+th {
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+tbody tr:hover {
+  background: #f8f9fd;
 }
 
 tr.suggestion {
   background: var(--suggestion-bg);
 }
 
+tr.suggestion:hover {
+  background: #ddedf0;
+}
+
 tr.day-separator td {
   font-weight: bold;
-  background: #f0f0f0;
+  background: var(--neutral-bg);
+  color: var(--muted);
   padding-top: 0.6rem;
   padding-bottom: 0.6rem;
 }
 
+tr.day-separator:hover td {
+  background: var(--neutral-bg);
+}
+
 .badge {
   display: inline-block;
-  padding: 0.1rem 0.5rem;
+  padding: 0.15rem 0.55rem;
   border-radius: 0.75rem;
   font-size: 0.8rem;
-  background: #ddd;
+  background: var(--neutral-bg);
+  color: var(--text);
 }
 
 .badge-suggestion {
@@ -129,7 +180,7 @@ tr.day-separator td {
 .badge-discarded,
 .badge-canceled,
 .badge-deleted {
-  background: #eee;
+  background: var(--neutral-bg);
   color: var(--muted);
 }
 
@@ -146,9 +197,11 @@ tr.day-separator td {
   gap: 1.25rem;
   align-items: center;
   margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 0.25rem;
+  border-radius: 0.6rem;
+  box-shadow: 0 1px 3px rgba(20, 30, 60, 0.05);
 }
 
 .filters label {
@@ -159,11 +212,19 @@ tr.day-separator td {
 }
 
 .filters select {
-  padding: 0.3rem 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .filters .checkbox-inline {
   flex-direction: row;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent);
 }
 
 .flashes {
@@ -174,37 +235,44 @@ tr.day-separator td {
 .flash {
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.5rem;
-  border-radius: 0.25rem;
-  background: #eee;
+  border-radius: 0.4rem;
+  background: var(--neutral-bg);
+  border-left: 3px solid var(--muted);
 }
 
-.flash-success { background: #d9f2df; }
-.flash-error { background: #fbdede; }
+.flash-success { background: #e1f5e6; border-left-color: var(--success); }
+.flash-error { background: #fbe4e8; border-left-color: var(--danger); }
 
 form { margin: 0; }
 
 button {
   cursor: pointer;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--accent);
-  background: white;
-  color: var(--accent);
-  border-radius: 0.25rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--accent-dark);
+  background: var(--accent-dark);
+  color: #fff;
+  border-radius: 0.4rem;
+  font-weight: 500;
+  transition: background 0.15s ease, transform 0.05s ease;
 }
 
 button:hover {
-  background: var(--accent);
-  color: white;
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+button:active {
+  transform: translateY(1px);
 }
 
 button.danger {
   border-color: var(--danger);
-  color: var(--danger);
+  background: var(--danger);
 }
 
 button.danger:hover {
-  background: var(--danger);
-  color: white;
+  background: var(--danger-dark);
+  border-color: var(--danger-dark);
 }
 
 .actions {
@@ -214,8 +282,16 @@ button.danger:hover {
 
 fieldset {
   margin-bottom: 1.25rem;
+  padding: 1rem;
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 0.25rem;
+  border-radius: 0.6rem;
+}
+
+fieldset legend {
+  color: var(--accent);
+  font-weight: 600;
+  padding: 0 0.35rem;
 }
 
 .checkbox {
@@ -231,6 +307,12 @@ fieldset {
 textarea, input[type="number"] {
   width: 100%;
   max-width: 24rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
 }
 
 .icon-sprite {
@@ -266,24 +348,25 @@ textarea, input[type="number"] {
 
 .progress-bar {
   height: 100%;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--teal), var(--blue));
 }
 
 .actions a,
 a.button {
   display: inline-block;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--accent);
-  background: white;
-  color: var(--accent);
-  border-radius: 0.25rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--accent-dark);
+  background: var(--accent-dark);
+  color: #fff;
+  border-radius: 0.4rem;
   text-decoration: none;
+  transition: background 0.15s ease;
 }
 
 .actions a:hover,
 a.button:hover {
-  background: var(--accent);
-  color: white;
+  background: var(--blue);
+  border-color: var(--blue);
 }
 
 @media (max-width: 700px) {
@@ -312,6 +395,10 @@ a.button:hover {
     gap: 0.75rem;
   }
 
+  table {
+    box-shadow: none;
+  }
+
   table, thead, tbody, th, td, tr {
     display: block;
   }
@@ -324,20 +411,23 @@ a.button:hover {
 
   tbody tr {
     margin-bottom: 0.75rem;
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 0.25rem;
+    border-radius: 0.6rem;
     padding: 0.5rem 0.75rem;
+    box-shadow: 0 1px 3px rgba(20, 30, 60, 0.05);
   }
 
   tr.day-separator {
     border: none;
     padding: 0;
     background: none;
+    box-shadow: none;
   }
 
   tr.day-separator td {
-    background: #f0f0f0;
-    border-radius: 0.25rem;
+    background: var(--neutral-bg);
+    border-radius: 0.4rem;
   }
 
   td {
