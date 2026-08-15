@@ -8,7 +8,7 @@ import os
 import re
 import secrets
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from flask import Flask, flash, redirect, render_template, request, send_file, url_for
@@ -96,6 +96,75 @@ def _dashboard_sort_key(config: Config, sort_key: str):
     return lambda j: j.get("record_start", "")
 
 
+def _duration_label(seconds) -> str:
+    if not seconds or seconds <= 0:
+        return ""
+    seconds = int(round(seconds))
+    if seconds < 60:
+        return f"{seconds} Sek"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes} Min"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours} Std {minutes} Min"
+
+
+def _known_upload_speed_bps(all_jobs: list[dict]) -> float | None:
+    """Letzte tatsächlich gemessene Upload-Geschwindigkeit über alle Jobs
+    hinweg (main.py schreibt sie nach jedem erfolgreichen Dropbox-Upload
+    weg) - genauer als ein synthetischer Speedtest, weil es der echte Pfad
+    zu Dropbox von genau diesem Server aus ist. None, solange noch nie ein
+    Upload durchgelaufen ist."""
+    measured = [
+        j
+        for j in all_jobs
+        if j.get("upload_speed_bps") and j.get("upload_speed_measured_at")
+    ]
+    if not measured:
+        return None
+    return max(measured, key=lambda j: j["upload_speed_measured_at"])["upload_speed_bps"]
+
+
+def _dashboard_job_view(job: dict, known_upload_speed_bps: float | None) -> dict:
+    """Reichert einen Job um rein für die Anzeige berechnete Felder an
+    (Dateigröße, geschätzte Uploadzeit, Restzeit bei laufendem Upload) -
+    wird nicht zurück nach jobs.json geschrieben."""
+    view = dict(job)
+
+    file_size = None
+    if job.get("file_path") and os.path.exists(job["file_path"]):
+        try:
+            file_size = os.path.getsize(job["file_path"])
+        except OSError:
+            file_size = None
+    view["file_size"] = file_size
+
+    view["estimated_upload_seconds"] = None
+    if (
+        file_size
+        and known_upload_speed_bps
+        and job["status"] in ("recorded", "ready", "failed")
+    ):
+        view["estimated_upload_seconds"] = file_size / known_upload_speed_bps
+
+    view["upload_eta_seconds"] = None
+    if (
+        job["status"] == "uploading"
+        and job.get("upload_progress")
+        and job.get("upload_total")
+        and job.get("upload_started_at")
+    ):
+        started_at = datetime.fromisoformat(job["upload_started_at"])
+        elapsed = (datetime.now(timezone.utc) - started_at).total_seconds()
+        if elapsed > 0:
+            live_bps = job["upload_progress"] / elapsed
+            remaining_bytes = job["upload_total"] - job["upload_progress"]
+            if live_bps > 0:
+                view["upload_eta_seconds"] = remaining_bytes / live_bps
+
+    return view
+
+
 def _build_table_rows(candidates, show_day_separators: bool) -> list[dict]:
     """Baut die Zeilenliste für die Sendungen-Tabelle. Bei "Alle Tage" wird
     vor der ersten Sendung eines neuen Kalendertags ein Trenner eingefügt -
@@ -119,6 +188,7 @@ def create_app(config: Config | None = None) -> Flask:
     app.jinja_env.filters["time_only"] = _time_only
     app.jinja_env.filters["status_label"] = _status_label
     app.jinja_env.filters["channel_name"] = _channel_name
+    app.jinja_env.filters["duration"] = _duration_label
 
     epg_cache: dict[str, object] = {"entries": [], "fetched_at": 0.0}
 
@@ -160,6 +230,8 @@ def create_app(config: Config | None = None) -> Flask:
         elif not show_hidden:
             jobs = [j for j in jobs if j["status"] not in HIDDEN_BY_DEFAULT_STATUSES]
         jobs.sort(key=_dashboard_sort_key(config, sort_key))
+        known_upload_speed_bps = _known_upload_speed_bps(all_jobs)
+        jobs = [_dashboard_job_view(j, known_upload_speed_bps) for j in jobs]
 
         return render_template(
             "dashboard.html",
@@ -198,6 +270,7 @@ def create_app(config: Config | None = None) -> Flask:
             error=None,
             upload_progress=None,
             upload_total=None,
+            upload_started_at=datetime.now(timezone.utc).isoformat(),
         )
         flash(f'"{job["title"]}" wird im Hintergrund zu Dropbox hochgeladen.', "success")
         return _dashboard_redirect()

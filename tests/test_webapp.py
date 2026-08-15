@@ -275,6 +275,66 @@ def test_direkt_and_delete_stay_available_after_upload(client, tmp_path):
     assert not file_path.exists()
 
 
+def test_dashboard_shows_file_size(client, tmp_path):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+    file_path = tmp_path / "recording.ts"
+    file_path.write_bytes(b"x" * 2_000_000)  # ~2 MB
+    scheduler.update_job(config, job["id"], status="ready", file_path=str(file_path))
+
+    body = client.get("/").get_data(as_text=True)
+    assert "1.9 MiB" in body or "2.0 MB" in body or "MiB" in body
+
+
+def test_dashboard_no_upload_estimate_without_known_speed(client, tmp_path):
+    """Ohne jemals einen erfolgreichen Upload gemessen zu haben, gibt es
+    keine Zeitschaetzung - genau wie gewuenscht "dann lass die Zeit weg"."""
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+    job = scheduler.create_job(config, "ard.de", "Tatort", start, end, 3, 12)
+    file_path = tmp_path / "recording.ts"
+    file_path.write_bytes(b"x" * 2_000_000)
+    scheduler.update_job(config, job["id"], status="ready", file_path=str(file_path))
+
+    body = client.get("/").get_data(as_text=True)
+    assert "Upload</small>" not in body
+
+
+def test_dashboard_shows_estimated_upload_time_once_speed_known(client, tmp_path):
+    from videobuddy import scheduler
+
+    config = client.app_config
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    end = start + timedelta(minutes=90)
+
+    # Ein bereits erfolgreich hochgeladener Job liefert die gemessene
+    # Geschwindigkeit (500 KB/s), die fuer die Schaetzung genutzt wird.
+    done_job = scheduler.create_job(config, "ard.de", "Schon hoch", start, end, 3, 12)
+    scheduler.update_job(
+        config,
+        done_job["id"],
+        status="uploaded",
+        file_path=str(tmp_path / "done.ts"),
+        upload_speed_bps=500_000,
+        upload_speed_measured_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+    pending_job = scheduler.create_job(config, "zdf.de", "Wartet noch", start, end, 3, 12)
+    file_path = tmp_path / "pending.ts"
+    file_path.write_bytes(b"x" * 1_000_000)  # 1 MB -> bei 500 KB/s ~2 Sek
+    scheduler.update_job(config, pending_job["id"], status="ready", file_path=str(file_path))
+
+    body = client.get("/").get_data(as_text=True)
+    assert "~2 Sek Upload" in body
+
+
 def test_dashboard_shows_upload_progress_and_autorefresh(client, tmp_path):
     from videobuddy import scheduler
 

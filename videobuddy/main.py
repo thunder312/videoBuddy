@@ -6,6 +6,7 @@ data/-Ordner."""
 from __future__ import annotations
 
 import logging
+import os
 import re
 import signal
 import time
@@ -136,15 +137,35 @@ def _process_uploading(config: Config, job: dict) -> None:
         )
 
     try:
+        upload_start = datetime.now(timezone.utc)
         dropbox_upload.upload_file(
             job["file_path"], config.dropbox, on_progress=on_progress
         )
+        # Tatsaechlich erreichte Geschwindigkeit dieses Uploads merken - die
+        # Weboberflaeche nutzt den zuletzt gemessenen Wert, um bei noch nicht
+        # hochgeladenen Aufnahmen eine Uploadzeit zu schaetzen. Genauer als
+        # ein synthetischer Speedtest, weil es der echte Pfad zu Dropbox ist.
+        elapsed = (datetime.now(timezone.utc) - upload_start).total_seconds()
+        upload_speed_bps = None
+        if elapsed > 0:
+            try:
+                upload_speed_bps = os.path.getsize(job["file_path"]) / elapsed
+            except OSError:
+                upload_speed_bps = None
         scheduler.update_job(
             config,
             job["id"],
             status="uploaded",
             upload_progress=None,
             upload_total=None,
+            **(
+                {
+                    "upload_speed_bps": upload_speed_bps,
+                    "upload_speed_measured_at": datetime.now(timezone.utc).isoformat(),
+                }
+                if upload_speed_bps
+                else {}
+            ),
         )
         logger.info("Zu Dropbox hochgeladen: %s", job["title"])
     except Exception as exc:

@@ -50,6 +50,7 @@
           <th>Sender</th>
           <th>Titel</th>
           <th>Sendezeit</th>
+          <th>Größe</th>
           <th>Status</th>
           <th></th>
         </tr>
@@ -60,6 +61,16 @@
             <td data-label="Sender">{{ channel_map.get(job.channel, job.channel) | channel_name }}</td>
             <td data-label="Titel">{{ job.title }}</td>
             <td data-label="Sendezeit">{{ job.epg_start | local_time }} - {{ job.epg_end | local_time }}</td>
+            <td data-label="Größe">
+              {% if job.file_size %}
+                {{ job.file_size | filesizeformat }}
+                {% if job.estimated_upload_seconds %}
+                  <br><small>~{{ job.estimated_upload_seconds | duration }} Upload</small>
+                {% endif %}
+              {% else %}
+                -
+              {% endif %}
+            </td>
             <td data-label="Status"><span class="badge badge-{{ job.status }}">{{ job.status | status_label }}</span>
               {% if job.found_in_mediathek %}<span class="badge badge-mediathek">auch in Mediathek</span>{% endif %}
               {% if job.status == "failed" and job.error %}<br><small>{{ job.error }}</small>{% endif %}
@@ -67,7 +78,7 @@
                 <div class="progress" title="{{ job.upload_progress | filesizeformat }} von {{ job.upload_total | filesizeformat }}">
                   <div class="progress-bar" style="width: {{ (100 * (job.upload_progress or 0) / job.upload_total) | round(1) }}%"></div>
                 </div>
-                <small>{{ (100 * (job.upload_progress or 0) / job.upload_total) | round | int }}% ({{ job.upload_progress | filesizeformat }} / {{ job.upload_total | filesizeformat }})</small>
+                <small>{{ (100 * (job.upload_progress or 0) / job.upload_total) | round | int }}% ({{ job.upload_progress | filesizeformat }} / {{ job.upload_total | filesizeformat }}){% if job.upload_eta_seconds %} · noch ~{{ job.upload_eta_seconds | duration }}{% endif %}</small>
               {% endif %}
             </td>
             <td data-label="Aktion">

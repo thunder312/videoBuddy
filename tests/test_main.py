@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from videobuddy import main, scheduler
 
 START = datetime(2026, 6, 1, 20, 0, tzinfo=timezone.utc)
@@ -89,6 +91,39 @@ def test_process_uploading_success(make_config, tmp_path, monkeypatch):
     # die Weboberflaeche), damit "Direkt" auch nach dem Dropbox-Upload noch
     # verfuegbar ist.
     assert file_path.exists()
+
+
+def test_process_uploading_records_measured_speed(make_config, tmp_path, monkeypatch):
+    """Nach einem erfolgreichen Upload merkt main.py die tatsaechlich
+    erreichte Geschwindigkeit - die Weboberflaeche nutzt sie, um bei noch
+    nicht hochgeladenen Aufnahmen eine Uploadzeit zu schaetzen."""
+    config = make_config()
+    job = scheduler.create_job(config, "ard.de", "Tatort", START, END, 3, 12)
+    file_path = tmp_path / "recording.mkv"
+    file_path.write_bytes(b"x" * 1_000_000)  # 1 MB
+    job = scheduler.update_job(
+        config, job["id"], status="uploading", file_path=str(file_path)
+    )
+    monkeypatch.setattr(
+        main.dropbox_upload, "upload_file", lambda *a, **k: "/PVR-OeRR/recording.mkv"
+    )
+
+    base = datetime(2026, 6, 1, 20, 0, tzinfo=timezone.utc)
+    times = iter([base, base + timedelta(seconds=2), base + timedelta(seconds=2)])
+
+    class _FakeDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return next(times)
+
+    monkeypatch.setattr(main, "datetime", _FakeDatetime)
+
+    main._process_uploading(config, job)
+
+    updated = scheduler.get_job(config, job["id"])
+    assert updated["status"] == "uploaded"
+    assert updated["upload_speed_bps"] == pytest.approx(500_000)  # 1 MB / 2 Sek
+    assert updated["upload_speed_measured_at"] is not None
 
 
 def test_process_uploading_persists_progress_and_clears_it_on_success(
