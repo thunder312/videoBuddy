@@ -16,7 +16,18 @@
 
     <fieldset>
       <legend>Spielfilm-Suchbegriffe (ein Begriff pro Zeile)</legend>
-      <textarea name="film_keywords" rows="6">{{ settings.film_keywords | join("\n") }}</textarea>
+      {% if available_genres %}
+        <label>
+          Genre aus dem EPG übernehmen
+          <select id="genre-picker">
+            <option value="">Genre auswählen …</option>
+            {% for genre in available_genres %}
+              <option value="{{ genre }}">{{ genre }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      {% endif %}
+      <textarea name="film_keywords" id="film-keywords" rows="6">{{ settings.film_keywords | join("\n") }}</textarea>
     </fieldset>
 
     <fieldset>
@@ -37,4 +48,24 @@
 
     <button type="submit">Speichern</button>
   </form>
+
+  <script>
+    // Haengt das im Dropdown gewaehlte Genre als neue Zeile ans Textfeld an,
+    // statt es zu ersetzen - mehrere Suchbegriffe bleiben nebeneinander
+    // bestehen. Ist das Genre schon als Zeile vorhanden, passiert nichts.
+    var genrePicker = document.getElementById("genre-picker");
+    if (genrePicker) {
+      genrePicker.addEventListener("change", function () {
+        var genre = genrePicker.value;
+        if (!genre) { return; }
+        var textarea = document.getElementById("film-keywords");
+        var lines = textarea.value.split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+        if (lines.indexOf(genre) === -1) {
+          lines.push(genre);
+          textarea.value = lines.join("\n");
+        }
+        genrePicker.value = "";
+      });
+    }
+  </script>
 {% endblock %}

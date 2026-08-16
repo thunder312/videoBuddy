@@ -11,32 +11,48 @@ def test_build_output_path_uses_ts_extension(tmp_path):
     ffmpeg-Prozess mitten in der Aufnahme hart gekillt wird (z. B. durch
     einen Docker-Container-Neustart), siehe recorder.py-Docstring."""
     output_path = recorder.build_output_path(
-        str(tmp_path), "Das.Erste.de", "Tatort", datetime(2026, 6, 1, 20, 0, tzinfo=timezone.utc)
+        str(tmp_path), "Tatort", datetime(2026, 6, 1, 20, 0, tzinfo=timezone.utc)
     )
 
     assert output_path.endswith(".ts")
     assert "Tatort" in output_path
-    assert "Das.Erste.de" in output_path
-    assert "20260601-2000" in output_path
+    assert "20260601" in output_path
 
 
 def test_build_output_path_creates_recording_dir(tmp_path):
     target_dir = tmp_path / "not-yet-created"
     recorder.build_output_path(
-        str(target_dir), "ard.de", "Titel", datetime(2026, 6, 1, 20, 0, tzinfo=timezone.utc)
+        str(target_dir), "Titel", datetime(2026, 6, 1, 20, 0, tzinfo=timezone.utc)
     )
     assert target_dir.is_dir()
 
 
 def test_build_output_path_sanitizes_title():
     output_path = recorder.build_output_path(
-        ".", "ard.de", 'Titel/mit:komischen*Zeichen?', datetime(2026, 6, 1, 20, 0, tzinfo=timezone.utc)
+        ".", 'Titel/mit:komischen*Zeichen?', datetime(2026, 6, 1, 20, 0, tzinfo=timezone.utc)
     )
     filename = output_path.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
     assert "/" not in filename
     assert ":" not in filename
     assert "*" not in filename
     assert "?" not in filename
+
+
+def test_build_output_path_appends_time_on_collision(tmp_path):
+    """Zwei Ausstrahlungen desselben Titels am selben Tag (z. B. Erst- und
+    Wiederholungssendung) duerfen sich nicht denselben Dateinamen teilen -
+    sonst ueberschreibt die zweite Aufnahme die erste (ffmpeg laeuft mit
+    "-y")."""
+    start1 = datetime(2026, 6, 1, 20, 0, tzinfo=timezone.utc)
+    start2 = datetime(2026, 6, 1, 23, 0, tzinfo=timezone.utc)
+
+    first_path = recorder.build_output_path(str(tmp_path), "Tatort", start1)
+    open(first_path, "w").close()  # simuliert bereits vorhandene Aufnahme
+    second_path = recorder.build_output_path(str(tmp_path), "Tatort", start2)
+
+    assert first_path != second_path
+    assert first_path.endswith("20260601_Tatort.ts")
+    assert second_path.endswith("20260601_Tatort_2300.ts")
 
 
 def test_is_finished_true_for_none_pid():

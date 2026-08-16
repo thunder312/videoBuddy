@@ -60,7 +60,7 @@ def _process_scheduled(config: Config, job: dict, now: datetime) -> None:
         record_start = _parse_iso(job["record_start"])
         record_end = _parse_iso(job["record_end"])
         output_path = recorder.build_output_path(
-            config.recording_dir, job["channel"], job["title"], record_start
+            config.recording_dir, job["title"], record_start
         )
         pid = recorder.start_recording(stream_url, output_path, record_end)
         scheduler.update_job(

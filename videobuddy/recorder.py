@@ -32,15 +32,18 @@ def _sanitize(text: str) -> str:
     return text[:80] or "aufnahme"
 
 
-def build_output_path(
-    recording_dir: str, channel: str, title: str, record_start: datetime
-) -> str:
+def build_output_path(recording_dir: str, title: str, record_start: datetime) -> str:
+    """Dateiname [yyyyMMdd]_[Sendungsname].ts. Kollidiert das mit einer
+    bereits vorhandenen Datei (z. B. zwei Ausstrahlungen desselben Titels am
+    selben Tag), wird die Uhrzeit angehängt, damit keine Aufnahme eine
+    andere stillschweigend überschreibt (ffmpeg läuft mit "-y")."""
     os.makedirs(recording_dir, exist_ok=True)
-    filename = (
-        f"{_sanitize(channel)}_{record_start.strftime('%Y%m%d-%H%M')}_"
-        f"{_sanitize(title)}.ts"
-    )
-    return os.path.join(recording_dir, filename)
+    base = f"{record_start.strftime('%Y%m%d')}_{_sanitize(title)}"
+    output_path = os.path.join(recording_dir, base + ".ts")
+    if os.path.exists(output_path):
+        base = f"{base}_{record_start.strftime('%H%M')}"
+        output_path = os.path.join(recording_dir, base + ".ts")
+    return output_path
 
 
 def start_recording(stream_url: str, output_path: str, record_end: datetime) -> int:

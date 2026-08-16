@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Sendungen wählen - videoBuddy{% endblock %}
+{% block title %}TV-Programm - videoBuddy{% endblock %}
 {% block content %}
-  <h1>Sendungen wählen</h1>
+  <h1>TV-Programm</h1>
 
   <form method="get" class="filters">
     <label>
@@ -79,6 +79,9 @@
                   </details>
                 {% else %}
                   {{ c.title }}
+                {% endif %}
+                {% if c.categories %}
+                  <div class="genre">{{ c.categories | join(", ") }}</div>
                 {% endif %}
               </td>
               <td data-label="Ende">{{ c.stop | time_only }}</td>

@@ -511,8 +511,14 @@ def create_app(config: Config | None = None) -> Flask:
             return redirect(url_for("einstellungen"))
 
         settings_data = load_settings(config)
+        available_genres = sorted(
+            {category for entry in get_epg_entries() for category in entry.categories}
+        )
         return render_template(
-            "einstellungen.html", settings=settings_data, channel_map=config.channel_map
+            "einstellungen.html",
+            settings=settings_data,
+            channel_map=config.channel_map,
+            available_genres=available_genres,
         )
 
     return app

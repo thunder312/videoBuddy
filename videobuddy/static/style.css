@@ -342,6 +342,11 @@ button.danger:hover {
   font-size: 0.9rem;
 }
 
+.genre {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 fieldset {
   margin-bottom: 1.25rem;
   padding: 1rem;

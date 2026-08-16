@@ -75,12 +75,12 @@ film_keywords:
 
 # Sendungen unter dieser Länge zählen nicht als Film (filtert z. B.
 # Kurzformate mit falsch gesetztem Genre-Tag heraus)
-min_duration_minutes: 70
+min_duration_minutes: 35
 
 # Sicherheitspuffer: Aufnahme startet X Minuten vor und endet Y Minuten nach
 # der im EPG angegebenen Zeit, weil Sendungen gern überziehen
-buffer_before_minutes: 3
-buffer_after_minutes: 12
+buffer_before_minutes: 5
+buffer_after_minutes: 5
 
 # Wie lange nach Sendeende gewartet wird, bevor geprüft wird, ob der Film in
 # der Mediathek gelandet ist

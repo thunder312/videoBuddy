@@ -237,6 +237,14 @@ def test_einstellungen_get_shows_channels(client):
     assert "zdf.de" in body
 
 
+def test_einstellungen_genre_dropdown_lists_epg_categories(client):
+    """Genres fuer das Dropdown kommen direkt aus den EPG-Daten (siehe
+    client-Fixture: categories=["Spielfilm"]), nicht aus einer fest
+    hinterlegten Liste."""
+    body = client.get("/einstellungen").get_data(as_text=True)
+    assert '<option value="Spielfilm">Spielfilm</option>' in body
+
+
 def test_upload_and_delete_only_offered_for_ready_or_failed(client, tmp_path):
     from videobuddy import scheduler
 
