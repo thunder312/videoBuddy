@@ -179,6 +179,13 @@ tr.day-separator:hover td {
   display: none;
 }
 
+/* Legende ist nur auf dem Handy relevant (Desktop hat Hover-Tooltips auf
+   den Status-Badges) und wird dort erst per Icon-Tap eingeblendet, statt
+   dauerhaft Platz vor der eigentlichen Aufnahmenliste zu belegen. */
+.legend-popover {
+  display: none;
+}
+
 .badge-suggestion {
   background: var(--accent);
   color: white;
@@ -258,6 +265,17 @@ tr.day-separator:hover td {
   border: 1px solid var(--border);
   border-radius: 0.6rem;
   box-shadow: 0 1px 3px rgba(20, 30, 60, 0.05);
+}
+
+/* Innerhalb eines einklappbaren Blocks (siehe TV-Programm) liefert schon
+   .collapsible die Box (Hintergrund/Rahmen/Schatten) - ohne diesen Reset
+   gaebe es eine Box-in-Box-Optik. */
+.collapsible .filters {
+  margin-bottom: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
 .filters label {
@@ -513,16 +531,55 @@ a.button:hover {
     align-items: stretch;
   }
 
+  .legend-popover {
+    display: inline-block;
+    position: relative;
+    margin-bottom: 1rem;
+  }
+
+  .legend-popover > summary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .legend-popover > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .legend-popover > summary::marker {
+    content: "";
+  }
+
+  .legend-popover[open] > summary {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
   .status-legend {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    margin-bottom: 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: absolute;
+    top: 2.5rem;
+    left: 0;
+    z-index: 20;
+    width: max-content;
+    max-width: 80vw;
     padding: 0.75rem 1rem;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 0.6rem;
     font-size: 0.8rem;
+    box-shadow: 0 6px 20px rgba(20, 30, 60, 0.2);
   }
 
   .status-legend-item {

@@ -87,8 +87,10 @@ def test_sendungen_titel_expands_epg_description(client, monkeypatch):
 
 def test_sendungen_titel_plain_without_epg_description(client):
     # Der Fixture-Eintrag hat description="" - siehe client-Fixture oben.
+    # <summary> kommt trotzdem vor (einklappbarer Filterblock), nur nicht
+    # als <details class="plot"> fuer den Titel.
     body = client.get("/sendungen").get_data(as_text=True)
-    assert "<summary>" not in body
+    assert '<details class="plot">' not in body
     assert "Der Blaue Planet" in body
 
 

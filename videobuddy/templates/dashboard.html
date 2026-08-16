@@ -33,22 +33,27 @@
     <noscript><button type="submit">Filtern</button></noscript>
   </form>
 
-  <div class="status-legend">
-    {% for status, label in status_options.items() %}
-      <span class="status-legend-item">
-        <span class="badge badge-icon badge-{{ status }}" aria-hidden="true">
-          <svg class="icon" aria-hidden="true"><use href="#{{ status | status_icon }}"></use></svg>
+  <details class="legend-popover">
+    <summary class="icon-btn" aria-label="Legende anzeigen" title="Legende anzeigen">
+      <svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>
+    </summary>
+    <div class="status-legend">
+      {% for status, label in status_options.items() %}
+        <span class="status-legend-item">
+          <span class="badge badge-icon badge-{{ status }}" aria-hidden="true">
+            <svg class="icon" aria-hidden="true"><use href="#{{ status | status_icon }}"></use></svg>
+          </span>
+          {{ label }}
         </span>
-        {{ label }}
+      {% endfor %}
+      <span class="status-legend-item">
+        <span class="badge badge-icon badge-mediathek" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#icon-tv"></use></svg>
+        </span>
+        auch in Mediathek gefunden
       </span>
-    {% endfor %}
-    <span class="status-legend-item">
-      <span class="badge badge-icon badge-mediathek" aria-hidden="true">
-        <svg class="icon" aria-hidden="true"><use href="#icon-tv"></use></svg>
-      </span>
-      auch in Mediathek gefunden
-    </span>
-  </div>
+    </div>
+  </details>
 {% endblock %}
 {% block content %}
   {% if not jobs %}

@@ -3,43 +3,47 @@
 {% block sticky %}
   <h1>TV-Programm</h1>
 
-  <form method="get" class="filters">
-    <label>
-      Datum
-      <select name="datum" onchange="this.form.submit()">
-        <option value="">Alle Tage</option>
-        {% for opt in date_options %}
-          <option value="{{ opt.value }}" {% if opt.value == selected_date %}selected{% endif %}>{{ opt.label }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <label>
-      Sender
-      <select name="sender" onchange="this.form.submit()">
-        <option value="">Alle Sender</option>
-        {% for channel_id, stream_title in channel_options.items() %}
-          <option value="{{ channel_id }}" {% if channel_id == selected_channel %}selected{% endif %}>{{ stream_title | channel_name }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <label>
-      Zeit von
-      <input type="time" name="zeit_von" value="{{ zeit_von }}" onchange="this.form.submit()">
-    </label>
-    <label>
-      bis
-      <input type="time" name="zeit_bis" value="{{ zeit_bis }}" onchange="this.form.submit()">
-    </label>
-    <label>
-      Suche
-      <input type="search" name="suche" value="{{ suche }}" placeholder="Sendungsname">
-    </label>
-    <label class="checkbox-inline">
-      <input type="checkbox" name="nur_vorschlaege" value="1" {% if only_suggestions %}checked{% endif %} onchange="this.form.submit()">
-      Nur Vorschläge zeigen
-    </label>
-    <button type="submit">Filtern</button>
-  </form>
+  {% set filters_active = selected_date or selected_channel or zeit_von or zeit_bis or suche or only_suggestions %}
+  <details class="collapsible" {% if filters_active %}open{% endif %}>
+    <summary>Filter{% if filters_active %} (aktiv){% endif %}</summary>
+    <form method="get" class="filters">
+      <label>
+        Datum
+        <select name="datum" onchange="this.form.submit()">
+          <option value="">Alle Tage</option>
+          {% for opt in date_options %}
+            <option value="{{ opt.value }}" {% if opt.value == selected_date %}selected{% endif %}>{{ opt.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Sender
+        <select name="sender" onchange="this.form.submit()">
+          <option value="">Alle Sender</option>
+          {% for channel_id, stream_title in channel_options.items() %}
+            <option value="{{ channel_id }}" {% if channel_id == selected_channel %}selected{% endif %}>{{ stream_title | channel_name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Zeit von
+        <input type="time" name="zeit_von" value="{{ zeit_von }}" onchange="this.form.submit()">
+      </label>
+      <label>
+        bis
+        <input type="time" name="zeit_bis" value="{{ zeit_bis }}" onchange="this.form.submit()">
+      </label>
+      <label>
+        Suche
+        <input type="search" name="suche" value="{{ suche }}" placeholder="Sendungsname">
+      </label>
+      <label class="checkbox-inline">
+        <input type="checkbox" name="nur_vorschlaege" value="1" {% if only_suggestions %}checked{% endif %} onchange="this.form.submit()">
+        Nur Vorschläge zeigen
+      </label>
+      <button type="submit">Filtern</button>
+    </form>
+  </details>
 
   <div class="toolbar">
     <form method="post" action="{{ url_for('alle_uebernehmen') }}">
