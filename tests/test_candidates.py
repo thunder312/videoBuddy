@@ -60,6 +60,31 @@ def test_not_a_suggestion_without_keyword():
     assert candidates[0].is_suggestion is False
 
 
+def test_genre_group_keyword_matches_tag_without_shared_substring():
+    """Der Suchbegriff "Sci-Fi" matcht ueber die kuratierte Genre-Gruppe
+    (genre_groups.py) auch "Science-Fiction" - obwohl die beiden Strings
+    keinen gemeinsamen Teilstring haben und reine Substring-Suche das nicht
+    faende."""
+    settings = {**SETTINGS, "film_keywords": ["Sci-Fi"]}
+    entries = [_entry(categories=["Science-Fiction"], stop=NOW + timedelta(hours=2, minutes=90))]
+    candidates = build_candidates(entries, settings, now=NOW)
+    assert candidates[0].is_suggestion is True
+
+
+def test_genre_group_keyword_is_case_insensitive():
+    settings = {**SETTINGS, "film_keywords": ["sci-fi"]}
+    entries = [_entry(categories=["Science-Fiction"], stop=NOW + timedelta(hours=2, minutes=90))]
+    candidates = build_candidates(entries, settings, now=NOW)
+    assert candidates[0].is_suggestion is True
+
+
+def test_genre_group_keyword_does_not_match_unrelated_category():
+    settings = {**SETTINGS, "film_keywords": ["Sci-Fi"]}
+    entries = [_entry(categories=["Kochshow"], stop=NOW + timedelta(hours=2, minutes=90))]
+    candidates = build_candidates(entries, settings, now=NOW)
+    assert candidates[0].is_suggestion is False
+
+
 def test_sorted_by_start_time():
     later = _entry(title="Spaeter", start=NOW + timedelta(hours=5), stop=NOW + timedelta(hours=6))
     earlier = _entry(title="Frueher", start=NOW + timedelta(hours=1), stop=NOW + timedelta(hours=2))

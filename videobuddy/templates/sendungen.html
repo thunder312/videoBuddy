@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}TV-Programm - videoBuddy{% endblock %}
-{% block content %}
+{% block sticky %}
   <h1>TV-Programm</h1>
 
   <form method="get" class="filters">
@@ -46,7 +46,8 @@
       <button type="submit">Alle Vorschläge übernehmen</button>
     </form>
   </div>
-
+{% endblock %}
+{% block content %}
   {% if not candidates %}
     <p>Keine {{ "Vorschläge" if only_suggestions else "Sendungen" }} für diese Filter gefunden.</p>
   {% else %}

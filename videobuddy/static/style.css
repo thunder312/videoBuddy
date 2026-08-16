@@ -27,12 +27,19 @@
 
 * { box-sizing: border-box; }
 
+html, body {
+  height: 100%;
+}
+
 body {
   font-family: system-ui, sans-serif;
   margin: 0;
   line-height: 1.4;
   background: var(--bg);
   color: var(--text);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 nav {
@@ -42,6 +49,7 @@ nav {
   padding: 0.85rem 1.5rem;
   background: linear-gradient(100deg, #146b78 0%, #1c3f66 30%, #2c4f86 60%, #5a3d7a 100%);
   box-shadow: 0 2px 8px rgba(20, 30, 50, 0.18);
+  flex: 0 0 auto;
 }
 
 nav .brand {
@@ -62,8 +70,26 @@ nav a:hover {
 
 main {
   max-width: 960px;
+  width: 100%;
   margin: 0 auto;
   padding: 1.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Kopfbereich (Titel, Filter, Toolbar) bleibt fest stehen; nur der Inhalt
+   darunter (Tabelle/Formular) scrollt in seinem eigenen Bereich - nicht die
+   ganze Seite, siehe Nutzerwunsch "Filter sollen nicht mitscrollen". */
+.page-head {
+  flex: 0 0 auto;
+}
+
+.scroll-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 table {
@@ -347,6 +373,12 @@ button.danger:hover {
   font-size: 0.85rem;
 }
 
+.hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 1rem;
+}
+
 fieldset {
   margin-bottom: 1.25rem;
   padding: 1rem;
@@ -359,6 +391,28 @@ fieldset legend {
   color: var(--accent);
   font-weight: 600;
   padding: 0 0.35rem;
+}
+
+/* Einklappbarer Block (z. B. "Beobachtete Sender") - <details> statt
+   fieldset, damit selten benoetigte, lange Listen nicht immer den Platz
+   belegen. Nativer Dreiecks-Marker bleibt bewusst sichtbar (kein Custom-Icon
+   noetig, funktioniert ohne JavaScript). */
+details.collapsible {
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+}
+
+details.collapsible > summary {
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+details.collapsible[open] > summary {
+  margin-bottom: 0.75rem;
 }
 
 .checkbox {

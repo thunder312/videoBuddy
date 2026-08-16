@@ -69,16 +69,21 @@
     <a href="{{ url_for('einstellungen') }}">Einstellungen</a>
   </nav>
   <main>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul class="flashes">
-          {% for category, message in messages %}
-            <li class="flash flash-{{ category }}">{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-    {% block content %}{% endblock %}
+    <div class="page-head">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <ul class="flashes">
+            {% for category, message in messages %}
+              <li class="flash flash-{{ category }}">{{ message }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% endwith %}
+      {% block sticky %}{% endblock %}
+    </div>
+    <div class="scroll-area">
+      {% block content %}{% endblock %}
+    </div>
   </main>
 </body>
 </html>

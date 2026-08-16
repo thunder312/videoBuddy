@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .epg import EpgEntry
+from .genre_groups import GENRE_GROUPS_LOWER
 
 
 @dataclass
@@ -25,8 +26,19 @@ class Candidate:
 def _matches_film_keywords(entry: EpgEntry, film_keywords: list[str]) -> bool:
     haystacks = [entry.title, *entry.categories]
     keywords_lower = [kw.lower() for kw in film_keywords]
-    return any(
+    if any(
         kw in haystack.lower() for kw in keywords_lower for haystack in haystacks
+    ):
+        return True
+
+    # Genre-Gruppen (z. B. "Sci-Fi") decken auch Tags ab, die keinen
+    # gemeinsamen Teilstring mit dem Suchbegriff haben (z. B.
+    # "Science-Fiction") - siehe genre_groups.py.
+    category_set = set(entry.categories)
+    return any(
+        not category_set.isdisjoint(GENRE_GROUPS_LOWER[kw])
+        for kw in keywords_lower
+        if kw in GENRE_GROUPS_LOWER
     )
 
 

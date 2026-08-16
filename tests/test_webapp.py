@@ -245,6 +245,15 @@ def test_einstellungen_genre_dropdown_lists_epg_categories(client):
     assert '<option value="Spielfilm">Spielfilm</option>' in body
 
 
+def test_einstellungen_genre_group_dropdown_lists_curated_groups(client):
+    """Zweites Dropdown zeigt die kuratierten Genre-Gruppen aus
+    genre_groups.py (z. B. "Sci-Fi"), unabhaengig von den aktuell im EPG
+    vorkommenden Rohdaten-Tags."""
+    body = client.get("/einstellungen").get_data(as_text=True)
+    assert '<option value="Sci-Fi">Sci-Fi</option>' in body
+    assert 'id="genre-group-picker"' in body
+
+
 def test_upload_and_delete_only_offered_for_ready_or_failed(client, tmp_path):
     from videobuddy import scheduler
 

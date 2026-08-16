@@ -16,6 +16,7 @@ from flask import Flask, flash, redirect, render_template, request, send_file, u
 from . import epg, recorder, scheduler
 from .candidates import build_candidates
 from .config import Config, load_config
+from .genre_groups import GENRE_GROUPS
 from .settings import load_settings, save_settings
 
 BERLIN = ZoneInfo("Europe/Berlin")
@@ -519,6 +520,7 @@ def create_app(config: Config | None = None) -> Flask:
             settings=settings_data,
             channel_map=config.channel_map,
             available_genres=available_genres,
+            genre_groups=sorted(GENRE_GROUPS),
         )
 
     return app

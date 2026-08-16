@@ -3,8 +3,8 @@
 {% block content %}
   <h1>Einstellungen</h1>
   <form method="post" class="settings-form">
-    <fieldset>
-      <legend>Beobachtete Sender</legend>
+    <details class="collapsible">
+      <summary>Beobachtete Sender</summary>
       {% for channel_id, stream_title in channel_map.items() %}
         <label class="checkbox">
           <input type="checkbox" name="watched_channels" value="{{ channel_id }}"
@@ -12,13 +12,29 @@
           {{ stream_title | channel_name }} ({{ channel_id }})
         </label>
       {% endfor %}
-    </fieldset>
+    </details>
 
     <fieldset>
       <legend>Spielfilm-Suchbegriffe (ein Begriff pro Zeile)</legend>
+      {% if genre_groups %}
+        <label>
+          Genre-Gruppe übernehmen
+          <select id="genre-group-picker">
+            <option value="">Genre-Gruppe auswählen …</option>
+            {% for group in genre_groups %}
+              <option value="{{ group }}">{{ group }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <p class="hint">
+          Fasst mehrere EPG-Genre-Tags zusammen, die sich sonst nicht per
+          Teilstring finden lassen (z. B. "Sci-Fi" trifft dann automatisch
+          auch "Science-Fiction"). Nur für deutschsprachige Sender kuratiert.
+        </p>
+      {% endif %}
       {% if available_genres %}
         <label>
-          Genre aus dem EPG übernehmen
+          Einzelnes Genre aus dem EPG übernehmen
           <select id="genre-picker">
             <option value="">Genre auswählen …</option>
             {% for genre in available_genres %}
@@ -50,22 +66,26 @@
   </form>
 
   <script>
-    // Haengt das im Dropdown gewaehlte Genre als neue Zeile ans Textfeld an,
+    // Haengt den im Dropdown gewaehlten Wert als neue Zeile ans Textfeld an,
     // statt es zu ersetzen - mehrere Suchbegriffe bleiben nebeneinander
-    // bestehen. Ist das Genre schon als Zeile vorhanden, passiert nichts.
-    var genrePicker = document.getElementById("genre-picker");
-    if (genrePicker) {
-      genrePicker.addEventListener("change", function () {
-        var genre = genrePicker.value;
-        if (!genre) { return; }
+    // bestehen. Ist der Wert schon als Zeile vorhanden, passiert nichts.
+    // Ein Handler fuer beide Picker (Genre-Gruppe + einzelnes EPG-Genre).
+    function wirePicker(pickerId) {
+      var picker = document.getElementById(pickerId);
+      if (!picker) { return; }
+      picker.addEventListener("change", function () {
+        var value = picker.value;
+        if (!value) { return; }
         var textarea = document.getElementById("film-keywords");
         var lines = textarea.value.split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
-        if (lines.indexOf(genre) === -1) {
-          lines.push(genre);
+        if (lines.indexOf(value) === -1) {
+          lines.push(value);
           textarea.value = lines.join("\n");
         }
-        genrePicker.value = "";
+        picker.value = "";
       });
     }
+    wirePicker("genre-group-picker");
+    wirePicker("genre-picker");
   </script>
 {% endblock %}
