@@ -69,7 +69,7 @@ nav a:hover {
 }
 
 main {
-  max-width: 960px;
+  max-width: 980px;
   width: 100%;
   margin: 0 auto;
   padding: 1.5rem;
@@ -106,6 +106,13 @@ th, td {
   padding: 0.6rem 0.75rem;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
+}
+
+/* Datum und Uhrzeit-Spanne je eigene Zeile (siehe dashboard.html), aber die
+   Uhrzeit-Spanne selbst ("20:15 - 21:55") soll nicht nochmal umbrechen - die
+   Spalte war sonst zu schmal und riss sie in drei Zeilen auseinander. */
+td[data-label="Sendezeit"] {
+  white-space: nowrap;
 }
 
 th {
@@ -602,6 +609,28 @@ a.button:hover {
   td:not([data-label])::before {
     content: none;
   }
+
+  /* Aufnahmen-Liste: statt alle sechs Spalten komplett untereinander (macht
+     jede Karte sehr lang), nutzt die Karte die volle Breite mit zwei
+     Spalten - Titel bekommt trotzdem eine eigene volle Zeile, weil er lang
+     werden kann. */
+  .aufnahmen-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "sender status"
+      "titel titel"
+      "sendezeit groesse"
+      "aktion aktion";
+    column-gap: 0.75rem;
+  }
+
+  .aufnahmen-table td[data-label="Sender"] { grid-area: sender; }
+  .aufnahmen-table td[data-label="Titel"] { grid-area: titel; }
+  .aufnahmen-table td[data-label="Sendezeit"] { grid-area: sendezeit; }
+  .aufnahmen-table td[data-label="Größe"] { grid-area: groesse; }
+  .aufnahmen-table td[data-label="Status"] { grid-area: status; justify-self: end; text-align: right; }
+  .aufnahmen-table td[data-label="Aktion"] { grid-area: aktion; }
 
   .actions {
     flex-wrap: wrap;
