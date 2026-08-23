@@ -10,8 +10,7 @@
 # "MDR Sachsen Livestream", "SWR BW Livestream", "HR Livestream",
 # "RBB Berlin Livestream", "SR Livestream", "KiKA Livestream",
 # "PHOENIX Livestream", "ARTE.DE Livestream", "3Sat Livestream",
-# "ARD Alpha Livestream", "ARD Tagesschau Livestream", "ORF-1 Livestream",
-# "ORF-2 Livestream", "ORF-3 Livestream", "ORF-Sport Livestream").
+# "ARD Alpha Livestream", "ARD Tagesschau Livestream").
 #
 # Linke Seite (EPG-Channel-ID) gegen die unten stehende epg_urls-Quelle
 # (epgshare01.online, Stand 2026-08-15) verifiziert. Nutzt du eine andere
@@ -26,6 +25,16 @@
 # Sender ab (44 Livestreams, Stand 2026-08-15) - private Sender wie RTL,
 # Sat.1, ProSieben oder VOX haben trotz EPG-Daten keinen frei nutzbaren
 # Livestream und würden beim Aufnehmen immer fehlschlagen.
+#
+# Österreichische Sender (ORF 1/2/III/SPORT+, Servus TV Österreich, ATV,
+# ATV II, oe24.TV, PULS 4/24/acht, Sky Sport Austria) sind trotz eigener
+# EPG-Einträge und - bei ORF - sogar eigener Livestream-URL in
+# fetch_live_streams() bewusst NICHT eingetragen: deren Streams sind laut
+# Nutzungsbedingungen auf Österreich beschränkt und liefern aus Deutschland
+# ein HTTP 403 (gegen die echten ORF-URLs verifiziert, 2026-08-23) - die
+# Aufnahme startet, ffmpeg bricht aber sofort ohne Datei ab. config.py lehnt
+# diese Channel-IDs zusätzlich hart ab (siehe GEOBLOCKED_CHANNEL_IDS), falls
+# sie hier versehentlich eingetragen werden.
 channel_map:
   "Das.Erste.de": "ARD Livestream"
   "ZDF.de":       "ZDF Livestream"
@@ -44,10 +53,6 @@ channel_map:
   "3sat.de":      "3Sat Livestream"
   "ARD.alpha.de": "ARD Alpha Livestream"
   "tagesschau24.de": "ARD Tagesschau Livestream"
-  "ORF.1.de":     "ORF-1 Livestream"
-  "ORF.2.de":     "ORF-2 Livestream"
-  "ORF.III.de":   "ORF-3 Livestream"
-  "ORF.SPORT.+.de": "ORF-Sport Livestream"
 
 # EPG-Quelle(n) im XMLTV-Format. Mehrere URLs werden zusammengeführt.
 # epgshare01.online: kostenloser, community-betriebener XMLTV-Aggregator,

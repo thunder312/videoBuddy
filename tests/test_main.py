@@ -24,6 +24,58 @@ def _make_recorded_job(make_config, tmp_path, mediathek_check_due):
     return config, job, file_path
 
 
+def test_process_recording_marks_failed_when_no_file_written(make_config, tmp_path):
+    """Wenn ffmpeg sofort abbricht (z.B. geoblockter Stream, HTTP 403), legt
+    es keine Ausgabedatei an. Der Scheduler-Loop darf das nicht stillschweigend
+    als 'recorded'/'ready' durchwinken, sondern muss es als 'failed' markieren."""
+    config = make_config()
+    job = scheduler.create_job(config, "ard.de", "Tatort", START, END, 3, 12)
+    missing_path = str(tmp_path / "nie_geschrieben.ts")
+    job = scheduler.update_job(
+        config,
+        job["id"],
+        status="recording",
+        pid=None,  # is_finished(None) == True
+        file_path=missing_path,
+    )
+
+    main._process_recording(config, job, datetime.now(timezone.utc))
+
+    updated = scheduler.get_job(config, job["id"])
+    assert updated["status"] == "failed"
+    assert updated["error"]
+
+
+def test_process_recording_marks_failed_when_file_empty(make_config, tmp_path):
+    config = make_config()
+    job = scheduler.create_job(config, "ard.de", "Tatort", START, END, 3, 12)
+    empty_path = tmp_path / "leer.ts"
+    empty_path.write_bytes(b"")
+    job = scheduler.update_job(
+        config, job["id"], status="recording", pid=None, file_path=str(empty_path)
+    )
+
+    main._process_recording(config, job, datetime.now(timezone.utc))
+
+    updated = scheduler.get_job(config, job["id"])
+    assert updated["status"] == "failed"
+
+
+def test_process_recording_marks_recorded_when_file_present(make_config, tmp_path):
+    config = make_config()
+    job = scheduler.create_job(config, "ard.de", "Tatort", START, END, 3, 12)
+    file_path = tmp_path / "aufnahme.ts"
+    file_path.write_bytes(b"x" * 1000)
+    job = scheduler.update_job(
+        config, job["id"], status="recording", pid=None, file_path=str(file_path)
+    )
+
+    main._process_recording(config, job, datetime.now(timezone.utc))
+
+    updated = scheduler.get_job(config, job["id"])
+    assert updated["status"] == "recorded"
+
+
 def test_process_recorded_marks_ready_and_flags_when_found_in_mediathek(
     make_config, tmp_path, monkeypatch
 ):

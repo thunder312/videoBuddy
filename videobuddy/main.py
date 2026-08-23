@@ -78,6 +78,19 @@ def _process_recording(config: Config, job: dict, now: datetime) -> None:
     if not (recorder.is_finished(job.get("pid")) or overdue):
         return
 
+    file_path = job.get("file_path")
+    if not file_path or not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+        scheduler.update_job(
+            config,
+            job["id"],
+            status="failed",
+            error="ffmpeg hat keine (oder eine leere) Datei erzeugt - Stream nicht erreichbar?",
+        )
+        logger.error(
+            "Aufnahme fehlgeschlagen, keine/leere Datei: %s (%s)", job["title"], job["channel"]
+        )
+        return
+
     mediathek_check_due = now + timedelta(hours=config.mediathek_check_delay_hours)
     scheduler.update_job(
         config,

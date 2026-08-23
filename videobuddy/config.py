@@ -7,6 +7,35 @@ from dataclasses import dataclass, field
 
 import yaml
 
+# EPG-Channel-IDs (Quelle: epgshare01 DE1-Feed), deren Livestreams gegen
+# echte Daten geprüft per HTTP 403 aus Deutschland geoblockt sind (ORF- und
+# weitere österreichische Sender - deren Streaming-Rechte sind auf
+# Österreich beschränkt). Werden hier bewusst hart abgelehnt statt nur per
+# Kommentar in config.example.yaml dokumentiert, damit ein späteres
+# versehentliches Wieder-Eintragen (z. B. beim Copy-Paste aus einer älteren
+# config) beim Start auffällt statt erst nach Tagen mit leeren Aufnahmen.
+GEOBLOCKED_CHANNEL_IDS = {
+    "ORF.1.de",
+    "ORF.2.de",
+    "ORF.III.de",
+    "ORF.SPORT.+.de",
+    "Servus.TV.Österreich.de",
+    "ATV.de",
+    "ATV.II.de",
+    "oe24.TV.de",
+    "PULS.4.de",
+    "tv-media.PULS.24.de",
+    "PULS.acht.de",
+    "Sky.Sport.Austria.de",
+    "Sky.Sport.Austria.1.HD.de",
+    "Sky.Sport.Austria.2.HD.de",
+    "Sky.Sport.Austria.3.HD.de",
+    "Sky.Sport.Austria.4.HD.de",
+    "Sky.Sport.Austria.5.HD.de",
+    "Sky.Sport.Austria.6.HD.de",
+    "Sky.Sport.Austria.7.HD.de",
+}
+
 
 @dataclass
 class DropboxConfig:
@@ -45,9 +74,17 @@ def load_config(path: str | None = None) -> Config:
     with open(path, "r", encoding="utf-8") as fh:
         raw = yaml.safe_load(fh)
 
+    channel_map = raw["channel_map"]
+    blocked = GEOBLOCKED_CHANNEL_IDS & channel_map.keys()
+    if blocked:
+        raise ValueError(
+            "channel_map enthält geoblockte Sender, deren Livestream aus "
+            f"Deutschland nicht erreichbar ist: {sorted(blocked)}"
+        )
+
     dropbox_raw = raw.get("dropbox", {})
     return Config(
-        channel_map=raw["channel_map"],
+        channel_map=channel_map,
         epg_urls=raw["epg_urls"],
         film_keywords=raw["film_keywords"],
         min_duration_minutes=raw["min_duration_minutes"],
