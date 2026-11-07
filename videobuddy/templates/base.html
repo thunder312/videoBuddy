@@ -4,7 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}videoBuddy{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="{{ url_for('static', filename='eulenwerk.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -78,7 +80,7 @@
     </symbol>
   </svg>
   <nav>
-    <a class="brand" href="{{ url_for('dashboard') }}"><img src="{{ url_for('static', filename='favicon.ico') }}" alt="" class="brand-logo">videoBuddy</a>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="" class="brand-logo">videoBuddy</a>
     <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">Aufnahmen</a>
     <a href="{{ url_for('sendungen') }}" class="{{ 'active' if request.endpoint == 'sendungen' else '' }}">TV-Programm</a>
     <a href="{{ url_for('einstellungen') }}" class="{{ 'active' if request.endpoint == 'einstellungen' else '' }}">Einstellungen</a>
@@ -110,7 +112,7 @@
   <script>
     EulenwerkAbout.init({
       app: "videoBuddy",
-      logo: "{{ url_for('static', filename='favicon.ico') }}",
+      logo: "{{ url_for('static', filename='favicon.svg') }}",
       version: "{{ app_version }}",
       description: "Persönlicher Videorecorder für die Live-Streams der öffentlich-rechtlichen Sender – mit Programmauswahl, Aufnahme per ffmpeg und Mediathek-Abgleich.",
       stack: ["Python", "Flask", "ffmpeg", "Docker", "Dropbox API"],
