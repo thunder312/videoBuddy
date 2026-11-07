@@ -1,15 +1,25 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-eulenwerk="medien">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}videoBuddy{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='eulenwerk.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   {% block head %}{% endblock %}
 </head>
 <body>
   <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="ew-owl" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 5 C11 12 16 13 24 13 C28 13 30 15 32 16 C34 15 36 13 40 13 C48 13 53 12 56 5"/>
+      <circle cx="22" cy="28" r="9"/><circle cx="42" cy="28" r="9"/>
+      <circle fill="currentColor" stroke="none" cx="22" cy="28" r="3.2"/><circle fill="currentColor" stroke="none" cx="42" cy="28" r="3.2"/>
+      <path d="M29.5 39 L32 42.5 L34.5 39"/>
+      <path d="M13 28 V48 C13 54 18 59 24 59 H40 C46 59 51 54 51 48 V28"/>
+      <path d="M19 40 C18.5 48 19.5 54 23 59"/><path d="M45 40 C45.5 48 44.5 54 41 59"/>
+    </symbol>
     <symbol id="icon-download" viewBox="0 0 24 24">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       <polyline points="7 10 12 15 17 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -68,10 +78,12 @@
     </symbol>
   </svg>
   <nav>
-    <a class="brand" href="{{ url_for('dashboard') }}">videoBuddy</a>
-    <a href="{{ url_for('dashboard') }}">Aufnahmen</a>
-    <a href="{{ url_for('sendungen') }}">TV-Programm</a>
-    <a href="{{ url_for('einstellungen') }}">Einstellungen</a>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="{{ url_for('static', filename='favicon.ico') }}" alt="" class="brand-logo">videoBuddy</a>
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">Aufnahmen</a>
+    <a href="{{ url_for('sendungen') }}" class="{{ 'active' if request.endpoint == 'sendungen' else '' }}">TV-Programm</a>
+    <a href="{{ url_for('einstellungen') }}" class="{{ 'active' if request.endpoint == 'einstellungen' else '' }}">Einstellungen</a>
+    <span class="spacer"></span>
+    <a href="#" data-ew-about title="Über videoBuddy">Über</a>
   </nav>
   <main>
     <div class="page-head">
@@ -90,5 +102,20 @@
       {% block content %}{% endblock %}
     </div>
   </main>
+  <footer class="ew-footer">
+    <a class="ew-brand" href="https://daniel-ertl.de" target="_blank" rel="noopener"><svg class="ew-logo" viewBox="0 0 64 64" aria-hidden="true"><use href="#ew-owl"/></svg>Ein Eulenwerk-Projekt</a>
+    <button type="button" class="link-btn" data-ew-about>Über videoBuddy</button>
+  </footer>
+  <script src="{{ url_for('static', filename='eulenwerk-about.js') }}"></script>
+  <script>
+    EulenwerkAbout.init({
+      app: "videoBuddy",
+      logo: "{{ url_for('static', filename='favicon.ico') }}",
+      version: "{{ app_version }}",
+      description: "Persönlicher Videorecorder für die Live-Streams der öffentlich-rechtlichen Sender – mit Programmauswahl, Aufnahme per ffmpeg und Mediathek-Abgleich.",
+      stack: ["Python", "Flask", "ffmpeg", "Docker", "Dropbox API"],
+      github: "https://github.com/thunder312/videoBuddy"
+    });
+  </script>
 </body>
 </html>

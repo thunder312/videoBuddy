@@ -238,6 +238,13 @@ def create_app(config: Config | None = None) -> Flask:
     app.jinja_env.filters["channel_name"] = _channel_name
     app.jinja_env.filters["duration"] = _duration_label
 
+    # Versionsnummer fuer den Eulenwerk-Ueber-Dialog (base.html)
+    from . import __version__ as _app_version
+
+    @app.context_processor
+    def _inject_version():
+        return {"app_version": _app_version}
+
     # fetched_at startet bei -inf statt 0.0: time.monotonic() misst Zeit seit
     # irgendeinem beliebigen Bezugspunkt (unter Linux typischerweise seit
     # Systemstart, NICHT seit der Unix-Epoche) - mit 0.0 als Startwert würde
